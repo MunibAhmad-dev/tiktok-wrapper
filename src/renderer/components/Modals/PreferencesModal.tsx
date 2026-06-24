@@ -136,6 +136,7 @@ export function PreferencesModal() {
           className="p-0 overflow-hidden border shadow-2xl"
           style={{ maxWidth: 780, width: '95vw', maxHeight: '85vh', borderRadius: 16, WebkitAppRegion: 'no-drag' } as React.CSSProperties}
         >
+          <DialogTitle className="sr-only">Preferences</DialogTitle>
           <div className="flex h-full" style={{ minHeight: 520 }}>
 
             {/* ── Left sidebar nav ───────────────────────────────────────── */}

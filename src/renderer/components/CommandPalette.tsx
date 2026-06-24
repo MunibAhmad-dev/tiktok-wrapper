@@ -3,7 +3,7 @@ import { useUIStore } from '../store/uiStore'
 import { useWorkspaceStore, getUniqueWorkspaceAccounts } from '../store/workspaceStore'
 import { useSettingsStore } from '../store/settingsStore'
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar'
-import { Dialog, DialogContent } from './ui/dialog'
+import { Dialog, DialogContent, DialogTitle } from './ui/dialog'
 import {
   Bot, Languages, Target, Search as SearchIcon, BarChart3,
   Command, Home, MessageCircle, Settings, Sparkles, UserPlus,
@@ -271,6 +271,7 @@ export function CommandPalette() {
   return (
     <Dialog open={isCommandPaletteOpen} onOpenChange={setCommandPaletteOpen}>
       <DialogContent className="p-0 overflow-hidden border shadow-2xl [&>button]:hidden" style={{ maxWidth: 560, borderRadius: 16 }}>
+        <DialogTitle className="sr-only">Command Palette</DialogTitle>
         {/* Search input — Radix close button hidden via [&>button]:hidden; ESC key still works */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-border/50">
           <Command className="h-4 w-4 text-muted-foreground shrink-0" />

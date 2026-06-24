@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Dialog, DialogContent } from '../ui/dialog'
+import { Dialog, DialogContent, DialogTitle } from '../ui/dialog'
 import { APP_STORE_REVIEW_URL } from '../../../shared/constants'
 
 const MAYBE_LATER_KEY = 'feedback_maybe_later_at'
@@ -36,6 +36,7 @@ export function FeedbackModal({ open, onClose }: FeedbackModalProps) {
           width: '100%',
         }}
       >
+        <DialogTitle className="sr-only">Rate your experience</DialogTitle>
         <div className="flex flex-col items-center px-8 pt-10 pb-8 gap-0">
           {/* Icon circle */}
           <div
