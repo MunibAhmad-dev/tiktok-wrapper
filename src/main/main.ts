@@ -962,10 +962,13 @@ function setupIPC(): void {
 
   // External links (blocked by window open handler, use shell instead)
   ipcMain.on('shell:openExternal', (_e, url: string) => {
-    // Open web links (App Store, privacy policy, support, etc.) in the user's
-    // default browser. Restricted to http/https so only web URLs are launched.
-    if (/^https?:\/\//i.test(url)) {
-      shell.openExternal(url).catch(() => {});
+    // Allow http/https URLs and mailto: links (support email).
+    if (/^https?:\/\//i.test(url) || /^mailto:/i.test(url)) {
+      shell.openExternal(url).catch((err) => {
+        console.error('[shell:openExternal] failed to open:', url, err);
+      });
+    } else {
+      console.warn('[shell:openExternal] blocked non-http URL:', url);
     }
   });
 

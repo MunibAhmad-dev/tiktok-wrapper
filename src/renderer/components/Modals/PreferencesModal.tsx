@@ -91,6 +91,17 @@ export function PreferencesModal() {
     setPrefsModalOpen(false)
   }
 
+  // Closes the modal AND navigates to the upgrade/paywall view.
+  // setMessagingActive(false) must arrive at main BEFORE setModalOpen(false)
+  // so repositionMessengerView() never briefly re-attaches the BrowserView
+  // on top of the Paywall panel while the Preferences dialog is animating out.
+  const closeAndUpgrade = () => {
+    window.electronAPI?.setMessagingActive(false)
+    window.electronAPI?.setModalOpen(false)
+    setPrefsModalOpen(false)
+    setActiveView('upgrade')
+  }
+
   const toggle = async (key: string, value: boolean) => {
     updateSettings({ [key]: value } as any)
     await window.electronAPI?.settings.update({ [key]: value } as any)
@@ -218,7 +229,7 @@ export function PreferencesModal() {
                       label="Compact Mode"
                       description="Reduce spacing for a denser, more information-dense layout"
                       isPremium={isPremium}
-                      onUpgradeClick={() => { close(); setActiveView('upgrade') }}
+                      onUpgradeClick={() => { closeAndUpgrade() }}
                       control={
                         <Switch
                           checked={compactMode}
@@ -238,7 +249,7 @@ export function PreferencesModal() {
                       title="Appearance Customisation"
                       description="Personalise accent colours, text size, and layout density. Make the app look exactly the way you want."
                       features={['12 accent colour options', '3 text size options', 'Compact / Comfortable layout', 'macOS vibrancy effects']}
-                      onUpgrade={() => { close(); setActiveView('upgrade') }}
+                      onUpgrade={() => { closeAndUpgrade() }}
                     />
                   ) : (
                     <div className="space-y-6">
@@ -309,7 +320,7 @@ export function PreferencesModal() {
                       label="Dock Badge Counter"
                       description="Show unread message count on the app icon in the Dock"
                       isPremium={isPremium}
-                      onUpgradeClick={() => { close(); setActiveView('upgrade') }}
+                      onUpgradeClick={() => { closeAndUpgrade() }}
                       control={
                         <Switch
                           checked={showDockBadge}
@@ -328,7 +339,7 @@ export function PreferencesModal() {
                       label="Dock Icon Bounce"
                       description="Bounce the dock icon when a new message arrives"
                       isPremium={isPremium}
-                      onUpgradeClick={() => { close(); setActiveView('upgrade') }}
+                      onUpgradeClick={() => { closeAndUpgrade() }}
                       control={
                         <Switch
                           checked={showNotifications && showDockBadge}
@@ -343,7 +354,7 @@ export function PreferencesModal() {
                       label="Focus / Do Not Disturb"
                       description="Silence all notifications while Focus Mode is active"
                       isPremium={isPremium}
-                      onUpgradeClick={() => { close(); setActiveView('upgrade') }}
+                      onUpgradeClick={() => { closeAndUpgrade() }}
                       control={
                         <Switch
                           checked={focusMode}
@@ -418,7 +429,7 @@ export function PreferencesModal() {
                             size="sm"
                             variant="link"
                             className="p-0 h-auto text-[#FE2C55] text-xs mt-1"
-                            onClick={() => { close(); setActiveView('upgrade') }}
+                            onClick={() => { closeAndUpgrade() }}
                           >
                             Upgrade now →
                           </Button>
@@ -458,7 +469,7 @@ export function PreferencesModal() {
                         <Button
                           size="sm"
                           className="shrink-0 bg-[#FE2C55] hover:bg-[#E0234A] text-white border-none"
-                          onClick={() => { close(); setActiveView('upgrade') }}
+                          onClick={() => { closeAndUpgrade() }}
                         >
                           Upgrade
                         </Button>

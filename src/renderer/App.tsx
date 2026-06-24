@@ -11,7 +11,6 @@ import { useEffect, useState } from 'react'
 import { Toaster } from 'sonner'
 import { Sidebar } from './components/Sidebar/Sidebar'
 import { WorkspaceView } from './components/WorkspaceView'
-import { UpgradeModal } from './components/Modals/UpgradeModal'
 import { PreferencesModal } from './components/Modals/PreferencesModal'
 import { DisclaimerModal } from './components/Modals/DisclaimerModal'
 import { CreateWorkspaceModal } from './components/Modals/CreateWorkspaceModal'
@@ -234,7 +233,6 @@ export function App() {
       <WorkspaceView />
 
       {/* ── Modals ─────────────────────────────────────────────────────── */}
-      <UpgradeModal />
       <PreferencesModal />
       <DisclaimerModal />
       <CreateWorkspaceModal />

@@ -44,9 +44,8 @@ export class MenuBuilder {
             click: () => this.win.webContents.send('menu:open-preferences'),
           },
           {
-            label: 'Upgrade to Premium…',
+            label: settings.isPremium ? 'Manage Subscription…' : 'Upgrade to Premium…',
             click: () => this.win.webContents.send('menu:open-upgrade'),
-            enabled: !settings.isPremium,
           },
           { type: 'separator' },
           {

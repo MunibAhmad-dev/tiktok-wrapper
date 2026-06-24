@@ -9,11 +9,14 @@ export const FACEBOOK_NOTIFICATIONS_URL = "https://www.tiktok.com/messages";
 export const BUNDLE_ID = "com.mihai.appsfortiktok";
 
 // ── Legal / support links (shown in the About tab and Help menu) ───────────────
-// IMPORTANT: App Store Connect requires YOUR OWN hosted privacy policy URL.
-// Replace PRIVACY_POLICY_URL below with the link you provide, then rebuild.
-export const PRIVACY_POLICY_URL = "https://www.tiktok.com/legal/privacy-policy"; // TODO: replace with your hosted privacy policy
-export const TERMS_OF_SERVICE_URL = "https://www.tiktok.com/legal/terms-of-service";
-export const SUPPORT_URL = "https://support.tiktok.com";
+// IMPORTANT: Replace PRIVACY_POLICY_URL with YOUR OWN hosted URL before submitting.
+// The root index.html in this repo is ready to upload to GitHub Pages.
+// Example: "https://munibahmad-dev.github.io/appsfortiktok-privacy/"
+export const PRIVACY_POLICY_URL = "https://munibahmad-dev.github.io/appsforTiktok-PrivacyPolicies/";
+// Apple's standard EULA is the accepted Terms of Service for MAS apps using StoreKit subscriptions.
+// Do NOT point to TikTok's ToS — TikTok URLs may be blocked in Apple's review environment.
+export const TERMS_OF_SERVICE_URL = "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/";
+export const SUPPORT_URL = "mailto:Grauremihai439@icloud.com";
 
 export const SIDEBAR_WIDTH_COLLAPSED = 80; // px (matches w-20)
 export const SIDEBAR_WIDTH_EXPANDED = 254; // px (matches w-64)
