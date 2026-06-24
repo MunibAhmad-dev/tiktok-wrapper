@@ -34,16 +34,12 @@ export function Paywall() {
   }
 
   return (
-    <div className="h-full flex items-center justify-center bg-background p-6"
-      style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
-    >
-      <div style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
-        <PremiumModal
-          onDismiss={() => setActiveView('dashboard')}
-          onPurchaseSuccess={handlePurchaseSuccess}
-          showCloseButton
-        />
-      </div>
+    <div className="h-full flex items-center justify-center bg-background p-6">
+      <PremiumModal
+        onDismiss={() => setActiveView('dashboard')}
+        onPurchaseSuccess={handlePurchaseSuccess}
+        showCloseButton
+      />
     </div>
   )
 }

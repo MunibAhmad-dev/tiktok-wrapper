@@ -134,7 +134,7 @@ export function PreferencesModal() {
       <Dialog open={isPrefsModalOpen} onOpenChange={(open) => { if (!open) close() }}>
         <DialogContent
           className="p-0 overflow-hidden border shadow-2xl"
-          style={{ maxWidth: 780, width: '95vw', maxHeight: '85vh', borderRadius: 16 }}
+          style={{ maxWidth: 780, width: '95vw', maxHeight: '85vh', borderRadius: 16, WebkitAppRegion: 'no-drag' } as React.CSSProperties}
         >
           <div className="flex h-full" style={{ minHeight: 520 }}>
 
