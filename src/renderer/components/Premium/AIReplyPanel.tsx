@@ -1,0 +1,175 @@
+import { useState, useEffect } from 'react'
+import { PremiumGate } from '../PremiumGate'
+import { useUIStore } from '../../store/uiStore'
+import { Button } from '../ui/button'
+import { AI_TONES } from '../../../shared/constants'
+import { Bot, Copy, RefreshCw, Sparkles } from 'lucide-react'
+import { toast } from 'sonner'
+import { safeCopy } from '../../lib/clipboard'
+
+const EXAMPLE_REPLIES: Record<string, string[]> = {
+  professional: [
+    "Thank you for reaching out. I'll review this and get back to you with a detailed response shortly.",
+    "I appreciate your message. Let me look into this and provide you with a comprehensive answer.",
+    "Thank you for bringing this to my attention. I will address this promptly.",
+  ],
+  friendly: [
+    "Hey! Thanks so much for the message 😊 I'll get back to you soon!",
+    "Oh nice, thanks for letting me know! I'll check it out and reply shortly.",
+    "Awesome, thanks! Give me a moment and I'll respond properly 🙌",
+  ],
+  casual: [
+    "Got it, I'll get back to you",
+    "Sure thing, will reply soon",
+    "Sounds good, talk later",
+  ],
+  concise: [
+    "Acknowledged. Will respond shortly.",
+    "Received. On it.",
+    "Noted. Reply soon.",
+  ],
+}
+
+export function AIReplyPanel() {
+  const { pendingAIText, setPendingAIText } = useUIStore()
+  const [inputText, setInputText] = useState('')
+  const [selectedTone, setSelectedTone] = useState<'professional' | 'friendly' | 'casual' | 'concise'>('professional')
+  const [replies, setReplies] = useState<string[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+
+  // Pre-fill from toolbar "→ AI Reply Page" button (avoids clipboard/paste issues on Mac)
+  useEffect(() => {
+    if (pendingAIText) {
+      setInputText(pendingAIText)
+      setReplies([])
+      setPendingAIText('')
+    }
+  }, [pendingAIText, setPendingAIText])
+
+  const generateReplies = async () => {
+    if (!inputText.trim()) {
+      toast.error('Please paste a message to reply to')
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      const result = await window.electronAPI?.ai?.generateReplies(inputText.trim(), selectedTone)
+      if (result?.success && result.replies && result.replies.length > 0) {
+        setReplies(result.replies)
+      } else {
+        toast.error(result?.error ? `AI error: ${result.error}` : 'AI returned no replies. Please try again.')
+        setReplies(EXAMPLE_REPLIES[selectedTone])
+      }
+    } catch {
+      toast.error('Failed to reach AI service. Please try again.')
+      setReplies(EXAMPLE_REPLIES[selectedTone])
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const copyReply = async (text: string) => {
+    const ok = await safeCopy(text)
+    if (ok) toast.success('Copied to clipboard ✓')
+    else toast.error('Copy failed — please select the text manually')
+  }
+
+  return (
+    <PremiumGate
+      feature="AI Reply Assistant"
+      description="Generate smart, context-aware reply suggestions with adjustable tone — Professional, Friendly, Casual, or Concise."
+      icon="🤖"
+    >
+      <div className="flex flex-col h-full">
+        {/* Header */}
+        <div className="flex items-center gap-3 px-6 py-4 border-b border-border/50 bg-background/95 backdrop-blur sticky top-0 z-10"
+          style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}>
+          <div className="w-8 h-8 rounded-xl bg-[#FE2C55]/10 dark:bg-[#FE2C55]/15 flex items-center justify-center text-[#FE2C55] dark:text-[#FE2C55]" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+            <Bot className="h-4 w-4" />
+          </div>
+          <div style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+            <h2 className="text-sm font-semibold text-foreground">AI Reply Assistant</h2>
+            <p className="text-[11px] text-muted-foreground">Generate smart replies in seconds</p>
+          </div>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-5">
+          {/* Message input */}
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Paste the message you want to reply to
+            </label>
+            <textarea
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              placeholder="e.g. &quot;Hi, can we schedule a call this week to discuss the project?&quot;"
+              rows={4}
+              className="w-full resize-none rounded-xl bg-muted/40 border border-border/50 text-sm text-foreground placeholder:text-muted-foreground px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50"
+            />
+          </div>
+
+          {/* Tone selector */}
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Reply Tone
+            </label>
+            <div className="grid grid-cols-4 gap-2">
+              {AI_TONES.map((tone) => (
+                <button
+                  key={tone.id}
+                  onClick={() => setSelectedTone(tone.id as typeof selectedTone)}
+                  className={`flex flex-col items-center gap-1 p-3 rounded-xl border text-xs font-semibold transition-all ${
+                    selectedTone === tone.id
+                      ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                      : 'bg-card border-border/50 text-muted-foreground hover:border-primary/40'
+                  }`}
+                >
+                  <span className="text-base">{tone.emoji}</span>
+                  {tone.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Generate button */}
+          <Button
+            className="w-full gap-2"
+            onClick={generateReplies}
+            disabled={isLoading || !inputText.trim()}
+          >
+            {isLoading ? (
+              <><RefreshCw className="h-4 w-4 animate-spin" /> Generating...</>
+            ) : (
+              <><Sparkles className="h-4 w-4" /> Generate Replies</>
+            )}
+          </Button>
+
+          {/* Results */}
+          {replies.length > 0 && (
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Suggestions — click to copy
+              </label>
+              {replies.map((reply, i) => (
+                <button
+                  key={i}
+                  onClick={() => copyReply(reply)}
+                  className="group w-full text-left p-4 rounded-xl bg-card border border-border/50 hover:border-primary/40 hover:bg-accent/30 transition-all text-sm text-foreground leading-relaxed"
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="text-xs font-bold text-muted-foreground mt-0.5 shrink-0">#{i + 1}</span>
+                    <span className="flex-1">{reply}</span>
+                    <Copy className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+        </div>
+      </div>
+    </PremiumGate>
+  )
+}
