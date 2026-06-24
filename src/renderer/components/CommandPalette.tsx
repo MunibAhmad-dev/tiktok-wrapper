@@ -270,8 +270,8 @@ export function CommandPalette() {
 
   return (
     <Dialog open={isCommandPaletteOpen} onOpenChange={setCommandPaletteOpen}>
-      <DialogContent className="p-0 overflow-hidden border shadow-2xl" style={{ maxWidth: 560, borderRadius: 16 }}>
-        {/* Search input */}
+      <DialogContent className="p-0 overflow-hidden border shadow-2xl [&>button]:hidden" style={{ maxWidth: 560, borderRadius: 16 }}>
+        {/* Search input — Radix close button hidden via [&>button]:hidden; ESC key still works */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-border/50">
           <Command className="h-4 w-4 text-muted-foreground shrink-0" />
           <input
@@ -281,7 +281,7 @@ export function CommandPalette() {
             placeholder="Type a command or search…"
             className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
           />
-          <kbd className="text-[10px] font-mono bg-muted border border-border rounded px-1.5 py-0.5 text-muted-foreground">
+          <kbd className="text-[10px] font-mono bg-muted border border-border rounded px-1.5 py-0.5 text-muted-foreground shrink-0">
             ESC
           </kbd>
         </div>
