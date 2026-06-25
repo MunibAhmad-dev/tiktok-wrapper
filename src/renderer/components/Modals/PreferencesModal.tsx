@@ -22,10 +22,10 @@ type Tab = 'general' | 'appearance' | 'notifications' | 'accounts' | 'premium' |
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode; premiumRequired?: boolean }[] = [
   { id: 'general',       label: 'General',       icon: <Settings className="h-4 w-4" /> },
-  { id: 'appearance',    label: 'Appearance',     icon: <Palette className="h-4 w-4" />,   premiumRequired: true },
+  { id: 'appearance',    label: 'Appearance',     icon: <Palette className="h-4 w-4" /> },
   { id: 'notifications', label: 'Notifications',  icon: <Bell className="h-4 w-4" /> },
   { id: 'accounts',      label: 'Accounts',       icon: <User className="h-4 w-4" /> },
-  { id: 'premium',       label: 'Premium',        icon: <CreditCard className="h-4 w-4" /> },
+  // { id: 'premium', label: 'Premium', icon: <CreditCard className="h-4 w-4" /> }, // hidden while IAP is disabled
   { id: 'about',         label: 'About',          icon: <Info className="h-4 w-4" /> },
 ]
 
@@ -151,7 +151,7 @@ export function PreferencesModal() {
                 </Avatar>
                 <div className="min-w-0">
                   <p className="text-xs font-semibold text-foreground truncate">{displayUsername}</p>
-                  <p className="text-[10px] text-muted-foreground">{isPremium ? '✦ Premium' : 'Free tier'}</p>
+                  <p className="text-[10px] text-muted-foreground">Apps for TikTok</p>
                 </div>
               </div>
 
@@ -190,7 +190,6 @@ export function PreferencesModal() {
                     {activeTab === 'appearance'    && 'Colours, fonts, and layout density'}
                     {activeTab === 'notifications' && 'Badge, sound, and DND preferences'}
                     {activeTab === 'accounts'      && 'Manage connected messaging accounts'}
-                    {activeTab === 'premium'       && 'Subscription and API integrations'}
                     {activeTab === 'about'         && 'Version info and legal'}
                   </p>
                 </div>
@@ -440,66 +439,8 @@ export function PreferencesModal() {
                   </div>
                 )}
 
-                {/* ── PREMIUM ──────────────────────────────────────────────── */}
-                {activeTab === 'premium' && (
-                  <div className="space-y-5">
-                    {/* Status */}
-                    <div className={cn(
-                      'rounded-2xl p-4 border flex items-center gap-4',
-                      isPremium
-                        ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800/30'
-                        : 'bg-muted/30 border-border/40'
-                    )}>
-                      <div className={cn(
-                        'w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0',
-                        isPremium ? 'bg-green-100 dark:bg-green-900/40' : 'bg-muted'
-                      )}>
-                        {isPremium ? '✦' : '🔒'}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-foreground">
-                          {isPremium ? 'Premium Active' : 'Free Tier'}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {isPremium
-                            ? 'All productivity features are unlocked'
-                            : 'Core messaging is always free'}
-                        </p>
-                      </div>
-                      {!isPremium && (
-                        <Button
-                          size="sm"
-                          className="shrink-0 bg-[#FE2C55] hover:bg-[#E0234A] text-white border-none"
-                          onClick={() => { closeAndUpgrade() }}
-                        >
-                          Upgrade
-                        </Button>
-                      )}
-                    </div>
-
-                    {/* Manage subscription */}
-                    {isPremium && (
-                      <div className="space-y-3">
-                        {/* Manage subscription */}
-                        <div className="rounded-2xl bg-muted/30 border border-border/40 p-4 flex items-center justify-between">
-                          <div>
-                            <p className="text-sm font-semibold text-foreground">Manage Subscription</p>
-                            <p className="text-xs text-muted-foreground">Cancel, upgrade, or view billing in the App Store</p>
-                          </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="gap-1.5 shrink-0"
-                            onClick={() => window.electronAPI?.openExternal('https://apps.apple.com/account/subscriptions')}
-                          >
-                            <ExternalLink className="h-3.5 w-3.5" />
-                            App Store
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
+                {/* ── PREMIUM (hidden while IAP is disabled) ───────────────── */}
+                {/* {activeTab === 'premium' && ( ... )} */}
 
                 {/* ── ABOUT ────────────────────────────────────────────────── */}
                 {activeTab === 'about' && (

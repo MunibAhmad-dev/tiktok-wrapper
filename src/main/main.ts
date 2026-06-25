@@ -114,8 +114,9 @@ const assetsPath = app.isPackaged
   ? path.join(process.resourcesPath, 'assets')
   : path.join(__dirname, '../assets');
 
-// Set dock icon (macOS only)
-if (process.platform === 'darwin' && app.dock) {
+// Set dock icon in dev only — in packaged builds the .icns from the app bundle is used.
+// Calling setIcon() in production overrides the bundle icon and renders it oversized.
+if (!app.isPackaged && process.platform === 'darwin' && app.dock) {
   app.dock.setIcon(path.join(assetsPath, 'icon.png'));
 }
 
@@ -1243,9 +1244,9 @@ app.on('second-instance', () => {
   }
 });
 
-// macOS: keep app running with no windows (lives in menu bar)
+// Always quit when the last window closes (Apple Guideline 4 — no orphaned windowless app).
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
+  app.quit();
 });
 
 app.on('will-quit', () => {

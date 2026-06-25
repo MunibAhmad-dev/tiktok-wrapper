@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { AppSettings } from '../../shared/types'
+import { IAP_ENABLED } from '../../shared/constants'
 
 interface SettingsStore extends AppSettings {
   // AI assistant
@@ -29,7 +30,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   focusMode: false,
   autoLaunch: false,
   showNotifications: true,
-  isPremium: false,
+  isPremium: !IAP_ENABLED,
   premiumExpiresAt: undefined,
   premiumProductId: undefined,
   sidebarExpanded: false,

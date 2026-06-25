@@ -18,6 +18,7 @@ import { MessageSchedulerPanel } from './Premium/MessageSchedulerPanel'
 import { MessagingToolbar, MESSAGING_TOOLBAR_HEIGHT } from './MessagingToolbar'
 import { ChevronLeft, ChevronRight, RotateCcw, Bell, BellOff, Settings, Bot, Languages, MessageSquarePlus } from 'lucide-react'
 import { cn } from '../lib/utils'
+import { IAP_ENABLED } from '../../shared/constants'
 
 type BrowserState = { canGoBack: boolean; canGoForward: boolean; url: string }
 type ToolbarMode = 'ai' | 'translate' | 'quick-reply' | null
@@ -120,7 +121,6 @@ export function WorkspaceView() {
               >
                 <Bot className="h-3.5 w-3.5" />
                 AI Reply
-                {!isPremium && <span className="text-[8px] font-bold opacity-70">PRO</span>}
               </button>
 
               {/* Translate toggle */}
@@ -136,7 +136,6 @@ export function WorkspaceView() {
               >
                 <Languages className="h-3.5 w-3.5" />
                 Translate
-                {!isPremium && <span className="text-[8px] font-bold opacity-70">PRO</span>}
               </button>
 
               {/* Quick Reply toggle */}
@@ -152,7 +151,6 @@ export function WorkspaceView() {
               >
                 <MessageSquarePlus className="h-3.5 w-3.5" />
                 Quick Reply
-                {!isPremium && <span className="text-[8px] font-bold opacity-70">PRO</span>}
               </button>
             </>
           )}
@@ -240,7 +238,7 @@ export function WorkspaceView() {
         {activeView === 'themes'               && <div className="absolute inset-0"><ThemeCustomizerPanel /></div>}
         {activeView === 'shortcuts'            && <div className="absolute inset-0"><ShortcutsPanel /></div>}
         {activeView === 'scheduler'            && <div className="absolute inset-0"><MessageSchedulerPanel /></div>}
-        {activeView === 'upgrade'              && <div className="absolute inset-0 overflow-y-auto"><Paywall /></div>}
+        {IAP_ENABLED && activeView === 'upgrade' && <div className="absolute inset-0 overflow-y-auto"><Paywall /></div>}
       </div>
     </div>
   )

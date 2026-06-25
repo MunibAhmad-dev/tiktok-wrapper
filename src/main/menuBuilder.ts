@@ -1,7 +1,7 @@
 import { app, Menu, MenuItemConstructorOptions, BrowserWindow, shell } from 'electron';
 import { AccountManager } from './accountManager';
 import { Store } from './store';
-import { APP_NAME, PRIVACY_POLICY_URL, SUPPORT_URL } from '../shared/constants';
+import { APP_NAME, PRIVACY_POLICY_URL, SUPPORT_URL, IAP_ENABLED } from '../shared/constants';
 
 export class MenuBuilder {
   constructor(
@@ -43,10 +43,10 @@ export class MenuBuilder {
             accelerator: 'Cmd+,',
             click: () => this.win.webContents.send('menu:open-preferences'),
           },
-          {
+          ...(IAP_ENABLED ? [{
             label: settings.isPremium ? 'Manage Subscription…' : 'Upgrade to Premium…',
             click: () => this.win.webContents.send('menu:open-upgrade'),
-          },
+          } as MenuItemConstructorOptions] : []),
           { type: 'separator' },
           {
             label: 'Launch at Login',

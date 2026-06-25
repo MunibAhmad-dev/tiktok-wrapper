@@ -48,7 +48,7 @@ export const useUIStore = create<UIStore>((set) => ({
   currentUser: null,
   isLoggedIn: false,
 
-  activeView: 'dashboard',
+  activeView: 'messaging',
   activeWorkspaceId: null,
   splashVisible: true,
   unreadCounts: {},

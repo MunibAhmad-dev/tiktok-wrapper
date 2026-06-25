@@ -22,6 +22,7 @@ import { useSettingsStore } from './store/settingsStore'
 import { useUIStore } from './store/uiStore'
 import { useWorkspaceStore } from './store/workspaceStore'
 import { useNotificationStore } from './store/notificationStore'
+import { IAP_ENABLED } from '../shared/constants'
 
 export function App() {
   const { theme, isPremium, updateSettings, setSettings } = useSettingsStore()
@@ -121,7 +122,7 @@ export function App() {
         })
         // "Upgrade to Premium…" menu item → open the in-app paywall view.
         window.electronAPI.onMenuEvent('menu:open-upgrade', () => {
-          setActiveView('upgrade')
+          if (IAP_ENABLED) setActiveView('upgrade')
         })
 
         // ── Load settings ────────────────────────────────────────────────
@@ -130,9 +131,14 @@ export function App() {
         document.documentElement.classList.toggle('dark', settingsData.theme === 'dark')
 
         // ── Check subscription ────────────────────────────────────────────
-        const isSubscribed = window.electronAPI.iap.checkSubscriptionStatus
-          ? await window.electronAPI.iap.checkSubscriptionStatus()
-          : false
+        let isSubscribed: boolean
+        if (IAP_ENABLED) {
+          isSubscribed = window.electronAPI.iap.checkSubscriptionStatus
+            ? await window.electronAPI.iap.checkSubscriptionStatus()
+            : false
+        } else {
+          isSubscribed = true // IAP disabled — treat all users as premium
+        }
         updateSettings({ isPremium: isSubscribed })
 
         // ── First-launch onboarding gate ──────────────────────────────────
@@ -185,8 +191,7 @@ export function App() {
           }
         }
 
-        // Always start on dashboard — user navigates to messaging explicitly
-        setActiveView('dashboard')
+        setActiveView('messaging')
         setIsLoading(false)
 
       } catch (err) {

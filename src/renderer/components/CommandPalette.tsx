@@ -238,6 +238,15 @@ export function CommandPalette() {
     return map
   }, [filtered])
 
+  // True global index for each item by id — avoids collision when same-category
+  // items are non-contiguous in the filtered array (e.g. Tools items appear both
+  // before and after App items in allCommands).
+  const itemIndex = useMemo(() => {
+    const map: Record<string, number> = {}
+    filtered.forEach((item, idx) => { map[item.id] = idx })
+    return map
+  }, [filtered])
+
   // Reset on open
   useEffect(() => {
     if (isCommandPaletteOpen) {
@@ -270,7 +279,7 @@ export function CommandPalette() {
 
   return (
     <Dialog open={isCommandPaletteOpen} onOpenChange={setCommandPaletteOpen}>
-      <DialogContent className="p-0 overflow-hidden border shadow-2xl [&>button]:hidden" style={{ maxWidth: 560, borderRadius: 16 }}>
+      <DialogContent className="p-0 overflow-hidden border shadow-2xl" hideCloseButton style={{ maxWidth: 560, borderRadius: 16 }}>
         <DialogTitle className="sr-only">Command Palette</DialogTitle>
         {/* Search input — Radix close button hidden via [&>button]:hidden; ESC key still works */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-border/50">
@@ -294,18 +303,13 @@ export function CommandPalette() {
               No results for "{query}"
             </div>
           ) : (
-            Object.entries(grouped).map(([category, items]) => {
-              let globalIdx = 0
-              // Calculate global index offset for this category
-              const categoryOffset = filtered.findIndex(f => f.id === items[0].id)
-
-              return (
-                <div key={category}>
-                  <div className="px-4 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                    {category}
-                  </div>
-                  {items.map((item, localIdx) => {
-                    const idx = categoryOffset + localIdx
+            Object.entries(grouped).map(([category, items]) => (
+              <div key={category}>
+                <div className="px-4 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  {category}
+                </div>
+                {items.map((item) => {
+                    const idx = itemIndex[item.id]
                     const isSelected = idx === selected
                     return (
                       <button
@@ -313,7 +317,7 @@ export function CommandPalette() {
                         onClick={item.action}
                         onMouseEnter={() => setSelected(idx)}
                         className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
-                          isSelected ? 'bg-accent' : 'hover:bg-accent/50'
+                          isSelected ? 'bg-accent' : ''
                         }`}
                       >
                         <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
@@ -335,9 +339,8 @@ export function CommandPalette() {
                       </button>
                     )
                   })}
-                </div>
-              )
-            })
+              </div>
+            ))
           )}
         </div>
       </DialogContent>

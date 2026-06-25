@@ -292,35 +292,6 @@ export function Sidebar({ }: SidebarProps) {
 
       {/* Bottom actions */}
       <div className={cn('border-t border-border/30 p-2 flex flex-col gap-1', isExpanded ? '' : 'items-center')}>
-        {/* Subscription button — always visible so plan can be viewed/changed anytime */}
-        {isExpanded ? (
-          <button
-            onClick={() => setActiveView('upgrade')}
-            className={cn(
-              'w-full flex items-center gap-2 px-3 py-2 rounded-xl border transition-all text-xs font-semibold',
-              isPremium
-                ? 'bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-amber-300/30 dark:border-amber-700/30 text-amber-600 dark:text-amber-400 hover:from-amber-500/20 hover:to-orange-500/20'
-                : 'bg-gradient-to-r from-[#FE2C55]/10 to-[#25F4EE]/10 border-[#FE2C55]/30 dark:border-[#FE2C55]/40 text-[#FE2C55] hover:from-[#FE2C55]/20 hover:to-[#25F4EE]/20'
-            )}
-          >
-            <Sparkles className="h-3.5 w-3.5 shrink-0" />
-            {isPremium ? '✦ Manage Subscription' : 'Unlock Premium'}
-          </button>
-        ) : (
-          <button
-            onClick={() => setActiveView('upgrade')}
-            title={isPremium ? 'Manage Subscription' : 'Unlock Premium'}
-            className={cn(
-              'w-10 h-10 flex items-center justify-center rounded-xl border transition-colors',
-              isPremium
-                ? 'bg-amber-500/10 border-amber-300/20 text-amber-500 hover:bg-amber-500/20'
-                : 'bg-[#FE2C55]/10 border-[#FE2C55]/20 text-[#FE2C55] hover:bg-[#FE2C55]/20'
-            )}
-          >
-            <Sparkles className="h-4 w-4" />
-          </button>
-        )}
-
         {/* Settings */}
         <button
           onClick={() => { window.electronAPI?.setModalOpen(true); setPrefsModalOpen(true) }}
