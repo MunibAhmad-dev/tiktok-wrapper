@@ -1244,9 +1244,11 @@ app.on('second-instance', () => {
   }
 });
 
-// Always quit when the last window closes (Apple Guideline 4 — no orphaned windowless app).
+// macOS standard: keep app running when window closes (lives in menu bar / dock).
+// Users can reopen via Window > Show Apps for TikTok Window, which satisfies Apple Guideline 4.
+// On all other platforms, quit when the last window closes.
 app.on('window-all-closed', () => {
-  app.quit();
+  if (process.platform !== 'darwin') app.quit();
 });
 
 app.on('will-quit', () => {

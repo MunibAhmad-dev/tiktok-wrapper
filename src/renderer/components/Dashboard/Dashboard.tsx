@@ -37,7 +37,7 @@ function getGreeting(): string {
 }
 
 export function Dashboard() {
-  const { setActiveView, setActiveWorkspaceId, unreadCounts, setPrefsModalOpen } = useUIStore()
+  const { setActiveView, setActiveWorkspaceId, unreadCounts, setPrefsModalOpen, isDemoMode, setIsDemoMode } = useUIStore()
   const { isPremium } = useSettingsStore()
   const { workspaceAccounts, workspaces, setActiveWorkspaceAccountId, setWorkspaces, setWorkspaceAccounts } = useWorkspaceStore()
 
@@ -115,6 +115,18 @@ export function Dashboard() {
               Upgrade
             </Button>
           )}
+          <Button
+            size="sm"
+            variant={isDemoMode ? 'outline' : 'secondary'}
+            className={`text-xs gap-1.5 ${isDemoMode ? 'border-emerald-500 text-emerald-600' : ''}`}
+            onClick={() => {
+              const next = !isDemoMode
+              setIsDemoMode(next)
+              if (next) setActiveView('messaging')
+            }}
+          >
+            {isDemoMode ? '✓ Exit Demo' : '▶ Try Demo'}
+          </Button>
           <Button
             variant="ghost"
             size="icon"

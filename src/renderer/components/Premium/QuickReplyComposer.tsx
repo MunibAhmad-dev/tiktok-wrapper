@@ -35,7 +35,7 @@ interface Draft {
 
 export function QuickReplyComposer() {
   const { workspaceAccounts, setActiveWorkspaceAccountId } = useWorkspaceStore()
-  const { setActiveView, setActiveWorkspaceId } = useUIStore()
+  const { setActiveView, setActiveWorkspaceId, isDemoMode, setPendingDemoText } = useUIStore()
   const accounts = useMemo(() => getUniqueWorkspaceAccounts(workspaceAccounts), [workspaceAccounts])
 
   const loadDraftsFromStorage = (): Draft[] => {
@@ -53,6 +53,8 @@ export function QuickReplyComposer() {
   // ── Inject text directly into the Messenger input field ─────────────────
   const sendToMessenger = async () => {
     if (!message.trim()) { toast.error('Type a message first'); return }
+    // Demo mode: inject into DemoMessagingView instead of the live BrowserView
+    if (isDemoMode) { setPendingDemoText(message.trim()); setActiveView('messaging'); setMessage(''); return }
     if (!selectedAccount) { toast.error('Select an account'); return }
 
     setIsSending(true)

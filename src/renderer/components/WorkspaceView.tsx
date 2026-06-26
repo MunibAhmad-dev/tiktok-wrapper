@@ -16,6 +16,7 @@ import { ThemeCustomizerPanel } from './Premium/ThemeCustomizerPanel'
 import { ShortcutsPanel } from './ShortcutsPanel'
 import { MessageSchedulerPanel } from './Premium/MessageSchedulerPanel'
 import { MessagingToolbar, MESSAGING_TOOLBAR_HEIGHT } from './MessagingToolbar'
+import { DemoMessagingView } from './DemoMessagingView'
 import { ChevronLeft, ChevronRight, RotateCcw, Bell, BellOff, Settings, Bot, Languages, MessageSquarePlus } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { IAP_ENABLED } from '../../shared/constants'
@@ -24,7 +25,7 @@ type BrowserState = { canGoBack: boolean; canGoForward: boolean; url: string }
 type ToolbarMode = 'ai' | 'translate' | 'quick-reply' | null
 
 export function WorkspaceView() {
-  const { activeView, setPrefsModalOpen } = useUIStore()
+  const { activeView, setPrefsModalOpen, isDemoMode, demoToolbarMode, demoToolbarPrefill, setDemoToolbar } = useUIStore()
   const { showNotifications, updateSettings, isPremium } = useSettingsStore()
 
   const [browserState, setBrowserState] = useState<BrowserState>({ canGoBack: false, canGoForward: false, url: '' })
@@ -41,8 +42,16 @@ export function WorkspaceView() {
 
   // ── BrowserView visibility (native layer) ────────────────────────────────
   useEffect(() => {
-    window.electronAPI?.setMessagingActive(activeView === 'messaging')
-  }, [activeView])
+    window.electronAPI?.setMessagingActive(activeView === 'messaging' && !isDemoMode)
+  }, [activeView, isDemoMode])
+
+  // ── Demo toolbar pre-fill ─────────────────────────────────────────────────
+  useEffect(() => {
+    if (!demoToolbarMode) return
+    setPrefillText(demoToolbarPrefill)
+    setToolbarMode(demoToolbarMode)
+    setDemoToolbar(null)
+  }, [demoToolbarMode])
 
   // ── Toolbar height → shifts BrowserView down so it isn't hidden behind toolbar ──
   useEffect(() => {
@@ -222,8 +231,11 @@ export function WorkspaceView() {
         For every other view, the BrowserView is detached and a React panel renders.
       */}
       <div className="flex-1 overflow-hidden relative bg-background">
-        {activeView === 'messaging' && (
+        {activeView === 'messaging' && !isDemoMode && (
           <div className="absolute inset-0" style={{ background: 'transparent' }} />
+        )}
+        {activeView === 'messaging' && isDemoMode && (
+          <div className="absolute inset-0"><DemoMessagingView /></div>
         )}
 
         {activeView === 'dashboard'            && <div className="absolute inset-0 overflow-y-auto"><Dashboard /></div>}

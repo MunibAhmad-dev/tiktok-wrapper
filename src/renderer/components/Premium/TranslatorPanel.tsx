@@ -3,7 +3,7 @@ import { PremiumGate } from '../PremiumGate'
 import { useUIStore } from '../../store/uiStore'
 import { Button } from '../ui/button'
 import { SUPPORTED_LANGUAGES } from '../../../shared/constants'
-import { Languages, Copy, ArrowRight, RefreshCw } from 'lucide-react'
+import { Languages, Copy, Send, ArrowRight, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 import { useSettingsStore } from '../../store/settingsStore'
 import { safeCopy } from '../../lib/clipboard'
@@ -12,7 +12,7 @@ import { safeCopy } from '../../lib/clipboard'
 
 export function TranslatorPanel() {
   const { targetLanguage, updateSettings } = useSettingsStore()
-  const { pendingTranslateText, setPendingTranslateText } = useUIStore()
+  const { pendingTranslateText, setPendingTranslateText, isDemoMode, setPendingDemoText, setActiveView } = useUIStore()
   const [inputText, setInputText] = useState('')
   const [translatedText, setTranslatedText] = useState('')
   const [selectedLang, setSelectedLang] = useState(targetLanguage || 'es')
@@ -55,6 +55,14 @@ export function TranslatorPanel() {
     const ok = await safeCopy(translatedText)
     if (ok) toast.success('Copied to clipboard ✓')
     else toast.error('Copy failed — please select the text manually')
+  }
+
+  const sendTranslation = async () => {
+    if (!translatedText) return
+    if (isDemoMode) { setPendingDemoText(translatedText); setActiveView('messaging'); return }
+    const result = await window.electronAPI?.injectText(translatedText)
+    if (result?.success) { setActiveView('messaging'); toast.success('✓ Inserted') }
+    else { await safeCopy(translatedText); toast.info('📋 Copied — paste into chat') }
   }
 
   const currentLang = SUPPORTED_LANGUAGES.find(l => l.code === selectedLang)
@@ -136,9 +144,14 @@ export function TranslatorPanel() {
                   Translation
                 </label>
                 {translatedText && (
-                  <button onClick={copyTranslation} className="flex items-center gap-1 text-[11px] text-primary hover:underline">
-                    <Copy className="h-3 w-3" /> Copy
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button onClick={copyTranslation} className="flex items-center gap-1 text-[11px] text-primary hover:underline">
+                      <Copy className="h-3 w-3" /> Copy
+                    </button>
+                    <button onClick={sendTranslation} className="flex items-center gap-1 text-[11px] text-emerald-600 hover:underline">
+                      <Send className="h-3 w-3" /> {isDemoMode ? 'Send to Chat' : 'Send to TikTok'}
+                    </button>
+                  </div>
                 )}
               </div>
               <div className="min-h-[100px] rounded-xl bg-muted/20 border border-border/50 px-4 py-3 text-sm text-foreground">

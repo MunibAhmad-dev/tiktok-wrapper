@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 import type { ActiveView, User } from '../../shared/types'
 
+type DemoToolbarMode = 'ai' | 'translate' | 'quick-reply'
+
 interface UIStore {
   // Auth
   currentUser: User | null
@@ -27,6 +29,12 @@ interface UIStore {
   pendingAIText: string
   pendingTranslateText: string
 
+  // Demo mode
+  isDemoMode: boolean
+  pendingDemoText: string
+  demoToolbarMode: DemoToolbarMode | null
+  demoToolbarPrefill: string
+
   // Actions
   setCurrentUser: (user: User | null) => void
   setIsLoggedIn: (loggedIn: boolean) => void
@@ -42,6 +50,9 @@ interface UIStore {
   hideSplash: () => void
   setPendingAIText: (text: string) => void
   setPendingTranslateText: (text: string) => void
+  setIsDemoMode: (demo: boolean) => void
+  setPendingDemoText: (text: string) => void
+  setDemoToolbar: (mode: DemoToolbarMode | null, prefill?: string) => void
 }
 
 export const useUIStore = create<UIStore>((set) => ({
@@ -63,6 +74,11 @@ export const useUIStore = create<UIStore>((set) => ({
   pendingAIText: '',
   pendingTranslateText: '',
 
+  isDemoMode: false,
+  pendingDemoText: '',
+  demoToolbarMode: null,
+  demoToolbarPrefill: '',
+
   setCurrentUser: (user) => set({ currentUser: user }),
   setIsLoggedIn: (loggedIn) => set({ isLoggedIn: loggedIn }),
   setActiveView: (view) => set({ activeView: view }),
@@ -77,4 +93,7 @@ export const useUIStore = create<UIStore>((set) => ({
   hideSplash: () => set({ splashVisible: false }),
   setPendingAIText: (text) => set({ pendingAIText: text }),
   setPendingTranslateText: (text) => set({ pendingTranslateText: text }),
+  setIsDemoMode: (demo) => set({ isDemoMode: demo }),
+  setPendingDemoText: (text) => set({ pendingDemoText: text }),
+  setDemoToolbar: (mode, prefill = '') => set({ demoToolbarMode: mode, demoToolbarPrefill: prefill }),
 }))

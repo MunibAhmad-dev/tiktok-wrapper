@@ -1,7 +1,7 @@
 {
   "name": "apps-for-tiktok",
   "productName": "Apps for TikTok",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Apps for TikTok – Multi-account TikTok desktop client with productivity tools",
   "main": "dist-electron/main.js",
   "author": "Apps for TikTok",

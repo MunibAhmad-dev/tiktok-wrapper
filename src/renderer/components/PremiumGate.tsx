@@ -2,6 +2,7 @@ import { useUIStore } from '../store/uiStore'
 import { useSettingsStore } from '../store/settingsStore'
 import { Button } from './ui/button'
 import { Sparkles } from 'lucide-react'
+import { IAP_ENABLED } from '../../shared/constants'
 
 interface PremiumGateProps {
   feature: string
@@ -16,9 +17,9 @@ interface PremiumGateProps {
  */
 export function PremiumGate({ feature, description, icon, children }: PremiumGateProps) {
   const { isPremium } = useSettingsStore()
-  const { setActiveView } = useUIStore()
+  const { setActiveView, isDemoMode } = useUIStore()
 
-  if (isPremium) return <>{children}</>
+  if (!IAP_ENABLED || isPremium || isDemoMode) return <>{children}</>
 
   return (
     <div className="flex flex-col h-full items-center justify-center p-8 text-center">

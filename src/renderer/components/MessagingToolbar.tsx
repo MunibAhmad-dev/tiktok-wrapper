@@ -4,20 +4,18 @@
  * Compact panel below the top bar in messaging view. Three modes:
  *   'ai'          — AI Reply generator
  *   'translate'   — Message translator
- *   'quick-reply' — Type and inject text directly into the open Messenger chat
+ *   'quick-reply' — Type and inject text directly into the open chat
  *
- * Quick Reply works while ALREADY IN messaging view, so the BrowserView is
- * live and focused. No view switching = reliable injection every time.
- *
- * Drafts are saved to localStorage so they survive reloads.
+ * In demo mode, "Send" routes text to the DemoMessagingView input via
+ * pendingDemoText rather than calling injectText on the BrowserView.
  */
 import { useState, useEffect, useRef } from 'react'
 import { useSettingsStore } from '../store/settingsStore'
 import { useUIStore } from '../store/uiStore'
-import { AI_TONES, SUPPORTED_LANGUAGES, QUICK_REPLY_DRAFTS_KEY } from '../../shared/constants'
+import { AI_TONES, SUPPORTED_LANGUAGES, QUICK_REPLY_DRAFTS_KEY, IAP_ENABLED } from '../../shared/constants'
 import {
   Bot, Languages, Copy, RefreshCw, Sparkles, X, ChevronDown,
-  MessageSquarePlus, Send, Clock, Trash2, CheckCircle2,
+  MessageSquarePlus, Send, Clock, Trash2,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '../lib/utils'
@@ -53,7 +51,6 @@ const EXAMPLE_REPLIES: Record<string, string[]> = {
   concise: ["Acknowledged. On it.", "Received. Will respond shortly.", "Noted. Reply soon."],
 }
 
-
 interface Props {
   mode: 'ai' | 'translate' | 'quick-reply' | null
   prefillText: string
@@ -63,7 +60,9 @@ interface Props {
 export function MessagingToolbar({ mode, prefillText, onClose }: Props) {
   const { targetLanguage, updateSettings } = useSettingsStore()
   const isPremium = useSettingsStore(s => s.isPremium)
-  const { setActiveView, setPendingAIText, setPendingTranslateText } = useUIStore()
+  const { setActiveView, setPendingAIText, setPendingTranslateText, isDemoMode, setPendingDemoText } = useUIStore()
+
+  const featuresUnlocked = !IAP_ENABLED || isPremium || isDemoMode
 
   // ── Send selected text to dedicated panel ────────────────────────────────
   const [isSendingToPanel, setIsSendingToPanel] = useState<'ai' | 'translate' | null>(null)
@@ -90,17 +89,32 @@ export function MessagingToolbar({ mode, prefillText, onClose }: Props) {
     }
   }
 
+  // ── Shared send-to-chat helper (demo-aware) ───────────────────────────────
+  const sendToChat = async (t: string) => {
+    if (isDemoMode) {
+      setPendingDemoText(t.trim())
+      return
+    }
+    const result = await window.electronAPI?.injectText(t.trim())
+    if (result?.success) {
+      toast.success('✓ Inserted — press Enter to send')
+    } else {
+      const ok = await safeCopy(t.trim())
+      toast.info(ok ? '📋 Copied — paste into chat' : '⚠️ Copy failed')
+    }
+  }
+
   // ── AI Reply ─────────────────────────────────────────────────────────────
-  const [aiInput, setAiInput]   = useState('')
-  const [tone, setTone]         = useState<'professional' | 'friendly' | 'casual' | 'concise'>('professional')
-  const [replies, setReplies]   = useState<string[]>([])
+  const [aiInput, setAiInput]     = useState('')
+  const [tone, setTone]           = useState<'professional' | 'friendly' | 'casual' | 'concise'>('professional')
+  const [replies, setReplies]     = useState<string[]>([])
   const [aiLoading, setAiLoading] = useState(false)
 
   // ── Translate ────────────────────────────────────────────────────────────
-  const [translateInput, setTranslateInput] = useState('')
-  const [translated, setTranslated]         = useState('')
+  const [translateInput, setTranslateInput]     = useState('')
+  const [translated, setTranslated]             = useState('')
   const [translateLoading, setTranslateLoading] = useState(false)
-  const [langOpen, setLangOpen] = useState(false)
+  const [langOpen, setLangOpen]                 = useState(false)
 
   // ── Quick Reply ───────────────────────────────────────────────────────────
   const [qrText, setQrText]         = useState('')
@@ -109,7 +123,7 @@ export function MessagingToolbar({ mode, prefillText, onClose }: Props) {
   const [showDrafts, setShowDrafts] = useState(false)
   const qrRef = useRef<HTMLTextAreaElement>(null)
 
-  // Pre-fill from right-click
+  // Pre-fill from right-click / demo context menu
   useEffect(() => {
     if (!prefillText) return
     if (mode === 'ai')          { setAiInput(prefillText);        setReplies([]) }
@@ -117,12 +131,12 @@ export function MessagingToolbar({ mode, prefillText, onClose }: Props) {
     if (mode === 'quick-reply') { setQrText(prefillText) }
   }, [prefillText, mode])
 
-  // Focus the quick reply input when it opens
+  // Focus quick reply input when it opens
   useEffect(() => {
     if (mode === 'quick-reply') setTimeout(() => qrRef.current?.focus(), 80)
   }, [mode])
 
-  // ── AI Reply — delegates to main process via IPC (avoids renderer sandbox) ──
+  // ── AI Reply ─────────────────────────────────────────────────────────────
   const generateReplies = async () => {
     if (!aiInput.trim()) { toast.error('Enter a message to reply to'); return }
     setAiLoading(true)
@@ -134,7 +148,7 @@ export function MessagingToolbar({ mode, prefillText, onClose }: Props) {
         toast.error(result?.error ? `AI error: ${result.error}` : 'AI returned no replies. Please try again.')
         setReplies(EXAMPLE_REPLIES[tone])
       }
-    } catch (err) {
+    } catch {
       toast.error('Failed to reach AI service. Please try again.')
       setReplies(EXAMPLE_REPLIES[tone])
     } finally {
@@ -142,7 +156,7 @@ export function MessagingToolbar({ mode, prefillText, onClose }: Props) {
     }
   }
 
-  // ── Translate — also via IPC ──────────────────────────────────────────────
+  // ── Translate ─────────────────────────────────────────────────────────────
   const handleTranslate = async () => {
     if (!translateInput.trim()) { toast.error('Enter text to translate'); return }
     setTranslateLoading(true)
@@ -157,9 +171,11 @@ export function MessagingToolbar({ mode, prefillText, onClose }: Props) {
     finally { setTranslateLoading(false) }
   }
 
-  // ── Quick Reply: inject directly into Messenger ───────────────────────────
+  // ── Quick Reply: inject directly into chat ────────────────────────────────
   const insertIntoChat = async (text = qrText) => {
     if (!text.trim()) { toast.error('Type a reply first'); return }
+    // Demo mode: route to DemoMessagingView instead of BrowserView
+    if (isDemoMode) { setPendingDemoText(text.trim()); setQrText(''); return }
     setQrSending(true)
     try {
       const result = await window.electronAPI?.injectText(text.trim())
@@ -205,17 +221,18 @@ export function MessagingToolbar({ mode, prefillText, onClose }: Props) {
     if (ok) toast.success('Copied to clipboard ✓')
     else toast.error('Copy failed — please select the text and copy manually')
   }
+
   const currentLang = SUPPORTED_LANGUAGES.find(l => l.code === (targetLanguage || 'es'))
 
   if (!mode) return null
 
   return (
     <div
-      className="shrink-0 border-b border-border/60 bg-background/98 backdrop-blur-xl overflow-visible"
+      className="shrink-0 border-b border-border/60 bg-background/98 backdrop-blur-xl flex flex-col overflow-visible"
       style={{ height: MESSAGING_TOOLBAR_HEIGHT }}
     >
       {/* ── SEND SELECTION TO DEDICATED PAGE ──────────────────────────────── */}
-      <div className="flex items-center gap-1.5 px-3 py-1 border-b border-border/30 bg-muted/20">
+      <div className="shrink-0 flex items-center gap-1.5 px-3 py-1 border-b border-border/30 bg-muted/20">
         <span className="text-[9px] text-muted-foreground font-semibold uppercase tracking-wide mr-1">Select text → send to:</span>
         <button
           onClick={() => sendToPanel('ai')}
@@ -237,7 +254,7 @@ export function MessagingToolbar({ mode, prefillText, onClose }: Props) {
 
       {/* ── AI REPLY ────────────────────────────────────────────────────── */}
       {mode === 'ai' && (
-        <div className="flex flex-col h-full px-4 py-2.5 gap-2">
+        <div className="flex-1 min-h-0 flex flex-col px-4 py-2.5 gap-2">
           <div className="flex items-center gap-2 shrink-0">
             <div className="w-6 h-6 rounded-lg bg-[#FE2C55]/10 dark:bg-[#FE2C55]/15 flex items-center justify-center">
               <Bot className="h-3.5 w-3.5 text-[#FE2C55] dark:text-[#FE2C55]" />
@@ -254,7 +271,7 @@ export function MessagingToolbar({ mode, prefillText, onClose }: Props) {
               ))}
             </div>
             <div className="flex-1" />
-            {!isPremium && <span className="text-[9px] font-bold text-[#FE2C55] bg-[#FE2C55]/10 dark:bg-[#FE2C55]/15 border border-[#FE2C55]/30 dark:border-[#FE2C55]/40 rounded-full px-1.5 py-0.5">PRO</span>}
+            {!featuresUnlocked && <span className="text-[9px] font-bold text-[#FE2C55] bg-[#FE2C55]/10 dark:bg-[#FE2C55]/15 border border-[#FE2C55]/30 dark:border-[#FE2C55]/40 rounded-full px-1.5 py-0.5">PRO</span>}
             <button onClick={onClose} className="p-1 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"><X className="h-3.5 w-3.5" /></button>
           </div>
 
@@ -263,7 +280,7 @@ export function MessagingToolbar({ mode, prefillText, onClose }: Props) {
               onKeyDown={e => e.key === 'Enter' && !aiLoading && generateReplies()}
               placeholder="Paste a message to reply to… or right-click selected text in chat"
               className="flex-1 rounded-lg border border-border/50 bg-muted/30 px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/40" />
-            <button onClick={generateReplies} disabled={aiLoading || !aiInput.trim() || !isPremium}
+            <button onClick={generateReplies} disabled={aiLoading || !aiInput.trim() || !featuresUnlocked}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#FE2C55] hover:bg-[#E0234A] text-white text-xs font-semibold disabled:opacity-50 transition-colors shrink-0">
               {aiLoading ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />} Generate
             </button>
@@ -272,16 +289,24 @@ export function MessagingToolbar({ mode, prefillText, onClose }: Props) {
           {replies.length > 0 ? (
             <div className="flex gap-2 overflow-x-auto pb-0.5">
               {replies.map((r, i) => (
-                <button key={i} onClick={() => copy(r)} title="Click to copy"
-                  className="shrink-0 max-w-[260px] flex items-start gap-1.5 px-2.5 py-1.5 rounded-xl bg-muted/40 border border-border/40 hover:border-primary/40 hover:bg-accent/30 transition-all group text-left">
-                  <span className="text-[10px] text-foreground/70 leading-relaxed line-clamp-3 flex-1">{r}</span>
-                  <Copy className="h-3 w-3 text-muted-foreground shrink-0 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </button>
+                <div key={i} className="shrink-0 max-w-[260px] flex flex-col gap-1.5 px-2.5 py-1.5 rounded-xl bg-muted/40 border border-border/40 hover:border-primary/40 transition-all">
+                  <span className="text-[10px] text-foreground/70 leading-relaxed line-clamp-3">{r}</span>
+                  <div className="flex gap-1">
+                    <button onClick={() => copy(r)}
+                      className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-muted hover:bg-accent border border-border/40 text-[9px] font-semibold text-muted-foreground hover:text-foreground transition-colors">
+                      <Copy className="h-2.5 w-2.5" /> Copy
+                    </button>
+                    <button onClick={() => sendToChat(r)}
+                      className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-[#FE2C55]/10 hover:bg-[#FE2C55]/20 border border-[#FE2C55]/30 text-[9px] font-semibold text-[#FE2C55] transition-colors">
+                      <Send className="h-2.5 w-2.5" /> {isDemoMode ? 'Send to Chat' : 'Send'}
+                    </button>
+                  </div>
+                </div>
               ))}
             </div>
           ) : (
             <p className="text-[10px] text-muted-foreground italic">
-              {isPremium ? 'Replies appear here — click to copy' : '⭐ Premium required'}
+              {featuresUnlocked ? 'Replies appear here' : '⭐ Premium required'}
             </p>
           )}
         </div>
@@ -289,7 +314,7 @@ export function MessagingToolbar({ mode, prefillText, onClose }: Props) {
 
       {/* ── TRANSLATE ───────────────────────────────────────────────────── */}
       {mode === 'translate' && (
-        <div className="flex flex-col h-full px-4 py-2.5 gap-2">
+        <div className="flex-1 min-h-0 flex flex-col px-4 py-2.5 gap-2">
           <div className="flex items-center gap-2 shrink-0">
             <div className="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 flex items-center justify-center">
               <Languages className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
@@ -319,7 +344,7 @@ export function MessagingToolbar({ mode, prefillText, onClose }: Props) {
             </div>
 
             <div className="flex-1" />
-            {!isPremium && <span className="text-[9px] font-bold text-[#FE2C55] bg-[#FE2C55]/10 dark:bg-[#FE2C55]/15 border border-[#FE2C55]/30 dark:border-[#FE2C55]/40 rounded-full px-1.5 py-0.5">PRO</span>}
+            {!featuresUnlocked && <span className="text-[9px] font-bold text-[#FE2C55] bg-[#FE2C55]/10 dark:bg-[#FE2C55]/15 border border-[#FE2C55]/30 dark:border-[#FE2C55]/40 rounded-full px-1.5 py-0.5">PRO</span>}
             <button onClick={onClose} className="p-1 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"><X className="h-3.5 w-3.5" /></button>
           </div>
 
@@ -328,7 +353,7 @@ export function MessagingToolbar({ mode, prefillText, onClose }: Props) {
               onKeyDown={e => e.key === 'Enter' && !translateLoading && handleTranslate()}
               placeholder="Paste text or right-click selected text in chat → Translate…"
               className="flex-1 rounded-lg border border-border/50 bg-muted/30 px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/40" />
-            <button onClick={handleTranslate} disabled={translateLoading || !translateInput.trim() || !isPremium}
+            <button onClick={handleTranslate} disabled={translateLoading || !translateInput.trim() || !featuresUnlocked}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold disabled:opacity-50 transition-colors shrink-0">
               {translateLoading ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Languages className="h-3 w-3" />} Translate
             </button>
@@ -342,10 +367,14 @@ export function MessagingToolbar({ mode, prefillText, onClose }: Props) {
                   className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-lg bg-muted/50 hover:bg-accent border border-border/40 text-[10px] font-semibold text-muted-foreground hover:text-foreground transition-colors">
                   <Copy className="h-3 w-3" /> Copy
                 </button>
+                <button onClick={() => sendToChat(translated)}
+                  className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-600/10 hover:bg-emerald-600/20 border border-emerald-600/30 text-[10px] font-semibold text-emerald-600 transition-colors">
+                  <Send className="h-3 w-3" /> {isDemoMode ? 'Send to Chat' : 'Send'}
+                </button>
               </>
             ) : (
               <p className="text-[10px] text-muted-foreground italic">
-                {isPremium ? `Translation to ${currentLang?.name} appears here` : '⭐ Premium required'}
+                {featuresUnlocked ? `Translation to ${currentLang?.name} appears here` : '⭐ Premium required'}
               </p>
             )}
           </div>
@@ -354,33 +383,32 @@ export function MessagingToolbar({ mode, prefillText, onClose }: Props) {
 
       {/* ── QUICK REPLY ─────────────────────────────────────────────────── */}
       {mode === 'quick-reply' && (
-        <div className="flex flex-col h-full px-4 py-2.5 gap-2 relative">
-          {/* Header */}
+        <div className="flex-1 min-h-0 flex flex-col px-4 py-2.5 gap-2 relative">
           <div className="flex items-center gap-2 shrink-0">
             <div className="w-6 h-6 rounded-lg bg-pink-100 dark:bg-pink-950/60 flex items-center justify-center">
               <MessageSquarePlus className="h-3.5 w-3.5 text-pink-600 dark:text-pink-400" />
             </div>
             <span className="text-xs font-bold text-foreground">Quick Reply</span>
-            <span className="text-[10px] text-muted-foreground">— opens a conversation, then click Insert</span>
+            <span className="text-[10px] text-muted-foreground">
+              {isDemoMode ? '— type and click Send to Chat' : '— opens a conversation, then click Insert'}
+            </span>
             <div className="flex-1" />
-            {!isPremium && <span className="text-[9px] font-bold text-[#FE2C55] bg-[#FE2C55]/10 dark:bg-[#FE2C55]/15 border border-[#FE2C55]/30 dark:border-[#FE2C55]/40 rounded-full px-1.5 py-0.5">PRO</span>}
+            {!featuresUnlocked && <span className="text-[9px] font-bold text-[#FE2C55] bg-[#FE2C55]/10 dark:bg-[#FE2C55]/15 border border-[#FE2C55]/30 dark:border-[#FE2C55]/40 rounded-full px-1.5 py-0.5">PRO</span>}
             <button onClick={onClose} className="p-1 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"><X className="h-3.5 w-3.5" /></button>
           </div>
 
-          {/* Text input */}
           <div className="flex gap-2 flex-1 min-h-0">
             <textarea
               ref={qrRef}
               value={qrText}
               onChange={e => setQrText(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); insertIntoChat() } }}
-              placeholder="Type your reply… (⌘+Enter to insert)"
+              placeholder="Type your reply… (⌘+Enter to send)"
               className="flex-1 resize-none rounded-xl border border-border/50 bg-muted/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-pink-400/50 leading-relaxed"
               rows={3}
             />
           </div>
 
-          {/* Actions */}
           <div className="flex items-center gap-2 shrink-0">
             {/* Drafts dropdown */}
             <div className="relative">
@@ -394,7 +422,6 @@ export function MessagingToolbar({ mode, prefillText, onClose }: Props) {
                 <Clock className="h-3 w-3" />
                 Drafts {drafts.length > 0 && <span className="ml-0.5 bg-primary text-primary-foreground rounded-full w-3.5 h-3.5 flex items-center justify-center text-[8px]">{drafts.length}</span>}
               </button>
-
               {showDrafts && (
                 <div className="absolute bottom-full left-0 mb-1 z-50 bg-background border border-border rounded-xl shadow-xl w-72 overflow-hidden">
                   {drafts.length === 0 ? (
@@ -430,12 +457,12 @@ export function MessagingToolbar({ mode, prefillText, onClose }: Props) {
 
             <button
               onClick={() => insertIntoChat()}
-              disabled={!qrText.trim() || qrSending || !isPremium}
+              disabled={!qrText.trim() || qrSending || !featuresUnlocked}
               className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-pink-600 hover:bg-pink-700 text-white text-xs font-semibold disabled:opacity-50 transition-colors shadow-sm"
             >
               {qrSending
                 ? <><RefreshCw className="h-3.5 w-3.5 animate-spin" /> Inserting…</>
-                : <><Send className="h-3.5 w-3.5" /> Insert into Chat</>}
+                : <><Send className="h-3.5 w-3.5" /> {isDemoMode ? 'Send to Chat' : 'Insert into Chat'}</>}
             </button>
           </div>
         </div>

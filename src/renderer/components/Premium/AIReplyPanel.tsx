@@ -3,7 +3,7 @@ import { PremiumGate } from '../PremiumGate'
 import { useUIStore } from '../../store/uiStore'
 import { Button } from '../ui/button'
 import { AI_TONES } from '../../../shared/constants'
-import { Bot, Copy, RefreshCw, Sparkles } from 'lucide-react'
+import { Bot, Copy, Send, RefreshCw, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
 import { safeCopy } from '../../lib/clipboard'
 
@@ -31,7 +31,7 @@ const EXAMPLE_REPLIES: Record<string, string[]> = {
 }
 
 export function AIReplyPanel() {
-  const { pendingAIText, setPendingAIText } = useUIStore()
+  const { pendingAIText, setPendingAIText, isDemoMode, setPendingDemoText, setActiveView } = useUIStore()
   const [inputText, setInputText] = useState('')
   const [selectedTone, setSelectedTone] = useState<'professional' | 'friendly' | 'casual' | 'concise'>('professional')
   const [replies, setReplies] = useState<string[]>([])
@@ -73,6 +73,13 @@ export function AIReplyPanel() {
     const ok = await safeCopy(text)
     if (ok) toast.success('Copied to clipboard ✓')
     else toast.error('Copy failed — please select the text manually')
+  }
+
+  const sendReply = async (text: string) => {
+    if (isDemoMode) { setPendingDemoText(text); setActiveView('messaging'); return }
+    const result = await window.electronAPI?.injectText(text)
+    if (result?.success) { setActiveView('messaging'); toast.success('✓ Inserted') }
+    else { await safeCopy(text); toast.info('📋 Copied — paste into chat') }
   }
 
   return (
@@ -150,20 +157,32 @@ export function AIReplyPanel() {
           {replies.length > 0 && (
             <div className="space-y-2">
               <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Suggestions — click to copy
+                Suggestions
               </label>
               {replies.map((reply, i) => (
-                <button
+                <div
                   key={i}
-                  onClick={() => copyReply(reply)}
-                  className="group w-full text-left p-4 rounded-xl bg-card border border-border/50 hover:border-primary/40 hover:bg-accent/30 transition-all text-sm text-foreground leading-relaxed"
+                  className="group w-full p-4 rounded-xl bg-card border border-border/50 hover:border-primary/40 transition-all"
                 >
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-start gap-3 mb-2">
                     <span className="text-xs font-bold text-muted-foreground mt-0.5 shrink-0">#{i + 1}</span>
-                    <span className="flex-1">{reply}</span>
-                    <Copy className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <span className="flex-1 text-sm text-foreground leading-relaxed">{reply}</span>
                   </div>
-                </button>
+                  <div className="flex gap-2 justify-end">
+                    <button
+                      onClick={() => copyReply(reply)}
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-muted hover:bg-accent border border-border/40 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <Copy className="h-3 w-3" /> Copy
+                    </button>
+                    <button
+                      onClick={() => sendReply(reply)}
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#FE2C55]/10 hover:bg-[#FE2C55]/20 border border-[#FE2C55]/30 text-xs font-semibold text-[#FE2C55] transition-colors"
+                    >
+                      <Send className="h-3 w-3" /> {isDemoMode ? 'Send to Chat' : 'Send to TikTok'}
+                    </button>
+                  </div>
+                </div>
               ))}
             </div>
           )}
