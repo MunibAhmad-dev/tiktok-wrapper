@@ -50,7 +50,7 @@ interface SidebarProps {
 
 export function Sidebar({ }: SidebarProps) {
   const { sidebarExpanded, theme, focusMode, updateSettings, isPremium } = useSettingsStore()
-  const { setPrefsModalOpen, activeView, setActiveView, setActiveWorkspaceId, setCommandPaletteOpen } = useUIStore()
+  const { setPrefsModalOpen, activeView, setActiveView, setActiveWorkspaceId, setCommandPaletteOpen, isDemoMode, setIsDemoMode } = useUIStore()
   const { workspaces, workspaceAccounts, activeWorkspaceAccountId, setWorkspaceAccounts, setActiveWorkspaceAccountId } = useWorkspaceStore()
 
   const [accountToRemove, setAccountToRemove] = useState<WorkspaceAccount | null>(null)
@@ -292,6 +292,36 @@ export function Sidebar({ }: SidebarProps) {
 
       {/* Bottom actions */}
       <div className={cn('border-t border-border/30 p-2 flex flex-col gap-1', isExpanded ? '' : 'items-center')}>
+        {/* Try Demo */}
+        <button
+          onClick={() => {
+            const next = !isDemoMode
+            setIsDemoMode(next)
+            if (next) setActiveView('messaging')
+          }}
+          title={isDemoMode ? 'Exit Demo' : 'Try Demo'}
+          className={cn(
+            'relative flex items-center gap-2.5 rounded-xl px-2 py-2 transition-all',
+            isExpanded ? 'w-full' : 'w-10 h-10 justify-center',
+            isDemoMode
+              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+              : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+          )}
+        >
+          <div className={cn('shrink-0 flex items-center justify-center', isExpanded ? 'w-7 h-7' : 'w-8 h-8')}>
+            <span className="text-sm">{isDemoMode ? '✓' : '▶'}</span>
+          </div>
+          {isExpanded && (
+            <div className="flex items-center justify-between flex-1 min-w-0">
+              <span className="text-[12px] font-semibold">{isDemoMode ? 'Exit Demo' : 'Try Demo'}</span>
+              {isDemoMode && <span className="text-[9px] font-bold bg-emerald-500 text-white rounded-full px-1.5 py-0.5">ON</span>}
+            </div>
+          )}
+          {!isExpanded && isDemoMode && (
+            <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full" />
+          )}
+        </button>
+
         {/* Settings */}
         <button
           onClick={() => { window.electronAPI?.setModalOpen(true); setPrefsModalOpen(true) }}

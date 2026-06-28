@@ -124,6 +124,28 @@ export function App() {
         window.electronAPI.onMenuEvent('menu:open-upgrade', () => {
           if (IAP_ENABLED) setActiveView('upgrade')
         })
+        window.electronAPI.onMenuEvent('menu:switch-account', async (accountId) => {
+          const { workspaceAccounts, workspaces } = useWorkspaceStore.getState()
+          const account = workspaceAccounts.find(a => a.id === String(accountId))
+          if (!account) return
+          const wsId = workspaces[0]?.id || account.workspaceId
+          setActiveWorkspaceId(wsId)
+          setActiveWorkspaceAccountId(account.id)
+          await window.electronAPI?.workspace.loadFacebook(wsId, account.id)
+          setActiveView('messaging')
+        })
+        window.electronAPI.onMenuEvent('menu:add-account', async () => {
+          const { workspaces } = useWorkspaceStore.getState()
+          const wsId = workspaces[0]?.id
+          if (!wsId) return
+          const newAccount = await window.electronAPI?.workspaceAccount.add(wsId, 'New Account')
+          if (!newAccount || 'error' in newAccount) return
+          const accounts = await window.electronAPI?.workspaceAccount.list(wsId) || []
+          setWorkspaceAccounts(accounts)
+          setActiveWorkspaceAccountId(newAccount.id)
+          await window.electronAPI?.workspace.loadFacebook(wsId, newAccount.id)
+          setActiveView('messaging')
+        })
 
         // ── Load settings ────────────────────────────────────────────────
         const settingsData = await window.electronAPI.settings.get()
