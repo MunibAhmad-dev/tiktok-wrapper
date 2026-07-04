@@ -35,7 +35,7 @@ export default defineConfig(({ mode }) => {
           // Bake the OpenAI key into the compiled main.js at build time.
           // process.env is not populated inside the MAS app bundle.
           define: {
-            "process.env['OPENAI_API_KEY']": JSON.stringify(env.OPENAI_API_KEY ?? ''),
+            'process.env.OPENAI_API_KEY': JSON.stringify(env.OPENAI_API_KEY ?? ''),
           },
         },
       },

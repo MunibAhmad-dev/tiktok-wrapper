@@ -775,7 +775,7 @@ function setupIPC(): void {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env['OPENAI_API_KEY'] || ''}`,
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY || ''}`,
         },
         body: JSON.stringify({
           model: OPENAI_MODEL,
@@ -840,7 +840,7 @@ function setupIPC(): void {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env['OPENAI_API_KEY'] || ''}`,
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY || ''}`,
         },
         body: JSON.stringify({
           model: OPENAI_MODEL,
@@ -882,7 +882,7 @@ function setupIPC(): void {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env['OPENAI_API_KEY'] || ''}`,
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY || ''}`,
         },
         body: JSON.stringify({
           model: OPENAI_MODEL,
