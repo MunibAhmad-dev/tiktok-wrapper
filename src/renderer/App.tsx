@@ -15,6 +15,7 @@ import { PreferencesModal } from './components/Modals/PreferencesModal'
 import { DisclaimerModal } from './components/Modals/DisclaimerModal'
 import { CreateWorkspaceModal } from './components/Modals/CreateWorkspaceModal'
 import { FeedbackModal } from './components/Modals/FeedbackModal'
+import { ReviewModal } from './components/Modals/ReviewModal'
 import { OnboardingScreen } from './components/OnboardingScreen'
 import { SplashScreen } from './components/SplashScreen'
 import { CommandPalette } from './components/CommandPalette'
@@ -225,6 +226,8 @@ export function App() {
     init()
   }, [])
 
+  // Review prompt disabled — will be re-enabled after App Store approval
+
   // ── ⌘K global shortcut ──────────────────────────────────────────────────
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -265,6 +268,7 @@ export function App() {
       <CreateWorkspaceModal />
       <FeedbackModal open={isFeedbackModalOpen} onClose={() => setFeedbackModalOpen(false)} />
       <CommandPalette />
+      <ReviewModal />
       <SplashScreen />
       <Toaster position="bottom-right" richColors />
     </div>
