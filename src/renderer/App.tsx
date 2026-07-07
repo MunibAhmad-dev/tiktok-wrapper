@@ -38,6 +38,7 @@ export function App() {
     setUnreadCounts,
     isFeedbackModalOpen,
     setFeedbackModalOpen,
+    setReviewModalOpen,
   } = useUIStore()
   const { setWorkspaces, setWorkspaceAccounts, setActiveWorkspaceAccountId } = useWorkspaceStore()
   const { addEntry: addNotificationEntry, markRead: markNotificationRead } = useNotificationStore()
@@ -100,6 +101,9 @@ export function App() {
         window.electronAPI.onMenuEvent('menu:show-disclaimer', () => {
           window.electronAPI?.setModalOpen(true)
           setDisclaimerModalOpen(true)
+        })
+        window.electronAPI.onMenuEvent('menu:reload-page', () => {
+          window.electronAPI?.browser?.reload()
         })
         window.electronAPI.onMenuEvent('menu:toggle-sidebar', () => {
           const { sidebarExpanded } = useSettingsStore.getState()
@@ -226,7 +230,25 @@ export function App() {
     init()
   }, [])
 
-  // Review prompt disabled — will be re-enabled after App Store approval
+  // ── Review prompt ────────────────────────────────────────────────────────
+  // Guideline 5.6.3 — only after 3 opens, 30 s delay, 3-day snooze on dismiss
+  useEffect(() => {
+    // Permanently dismissed after rating
+    if (localStorage.getItem('app_review_shown')) return
+
+    // Snoozed by "Maybe Later"
+    const snoozedUntil = parseInt(localStorage.getItem('app_review_snoozed_until') || '0', 10)
+    if (Date.now() < snoozedUntil) return
+
+    // Track launches; require at least 3
+    const count = parseInt(localStorage.getItem('app_launch_count') || '0', 10) + 1
+    localStorage.setItem('app_launch_count', String(count))
+    if (count < 3) return
+
+    // Show after 30 s so the user has time to actually use the app
+    const timer = setTimeout(() => setReviewModalOpen(true), 30_000)
+    return () => clearTimeout(timer)
+  }, [])
 
   // ── ⌘K global shortcut ──────────────────────────────────────────────────
   useEffect(() => {

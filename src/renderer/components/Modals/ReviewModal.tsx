@@ -7,19 +7,21 @@ import { Star } from 'lucide-react'
 export function ReviewModal() {
   const { isReviewModalOpen, setReviewModalOpen } = useUIStore()
 
-  function dismiss() {
+  function snooze() {
+    // Snooze for 3 days — modal can reappear on next open after that
+    localStorage.setItem('app_review_snoozed_until', String(Date.now() + 3 * 24 * 60 * 60 * 1000))
     setReviewModalOpen(false)
   }
 
   function openReview() {
     window.electronAPI?.openExternal(APP_STORE_REVIEW_URL)
-    localStorage.setItem('reviewRated', '1')
-    dismiss()
+    localStorage.setItem('app_review_shown', '1')  // permanent — never ask again
+    setReviewModalOpen(false)
   }
 
   return (
-    <Dialog open={isReviewModalOpen} onOpenChange={(o) => !o && dismiss()}>
-      <DialogContent className="max-w-sm text-center select-none" onPointerDownOutside={dismiss}>
+    <Dialog open={isReviewModalOpen} onOpenChange={(o) => !o && snooze()}>
+      <DialogContent className="max-w-sm text-center select-none" onPointerDownOutside={snooze}>
         <div className="flex flex-col items-center gap-4 py-2">
           <div className="flex gap-1 text-yellow-400">
             {[...Array(5)].map((_, i) => (
@@ -36,9 +38,9 @@ export function ReviewModal() {
 
           <div className="flex flex-col gap-2 w-full">
             <Button className="w-full" onClick={openReview}>
-              Rate on the App Store
+              ⭐ Rate on the App Store
             </Button>
-            <Button variant="ghost" className="w-full text-muted-foreground text-sm" onClick={dismiss}>
+            <Button variant="ghost" className="w-full text-muted-foreground text-sm" onClick={snooze}>
               Maybe Later
             </Button>
           </div>

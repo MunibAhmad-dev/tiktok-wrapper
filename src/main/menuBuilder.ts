@@ -105,8 +105,11 @@ export class MenuBuilder {
             click: (item) => this.win.webContents.send('menu:set-focus-mode', item.checked),
           },
           { type: 'separator' },
-          { role: 'reload' },
-          { role: 'forceReload' },
+          {
+            label: 'Refresh Page',
+            accelerator: 'CmdOrCtrl+R',
+            click: () => this.win.webContents.send('menu:reload-page'),
+          },
           { type: 'separator' },
           { role: 'resetZoom' },
           { role: 'zoomIn' },
