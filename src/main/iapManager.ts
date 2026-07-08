@@ -1,7 +1,7 @@
 import { inAppPurchase, BrowserWindow, net, app } from 'electron';
 import * as fs from 'fs';
 import { Store } from './store';
-import { IAP_PRODUCTS } from '../shared/constants';
+import { IAP_PRODUCTS, IAP_ENABLED } from '../shared/constants';
 import { PurchaseResult, ProductInfo } from '../shared/types';
 
 const isMac = process.platform === 'darwin';
@@ -260,8 +260,8 @@ export class IAPManager {
   }
 
   isPremium(): boolean {
-    // Automatically bypass paywall in development mode (running via npm run dev)
-    if (!app.isPackaged) {
+    // Bypass in dev or when IAP is globally disabled
+    if (!app.isPackaged || !IAP_ENABLED) {
       return true;
     }
     const s = this.store.get<{ isPremium?: boolean; premiumExpiresAt?: number }>('settings', {});

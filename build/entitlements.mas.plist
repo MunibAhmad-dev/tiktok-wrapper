@@ -18,8 +18,12 @@
   <key>com.apple.security.network.client</key>
   <true/>
 
-  <!-- Microphone: voice messages & audio calls -->
+  <!-- Microphone: voice messages, audio in TikTok LIVE & video recording -->
   <key>com.apple.security.device.microphone</key>
+  <true/>
+
+  <!-- Camera: TikTok video recording, LIVE streaming & video messages -->
+  <key>com.apple.security.device.camera</key>
   <true/>
 
   <!-- User-selected file access (downloads, file sharing) -->

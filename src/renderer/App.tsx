@@ -263,6 +263,13 @@ export function App() {
         window.electronAPI?.settings.update({ hasSeenOnboarding: false, isPremium: false })
           .then(() => setShowOnboarding(true))
       }
+      // Dev-only: ⌘⇧R → force-show review modal (bypasses launch count + snooze)
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'R') {
+        e.preventDefault()
+        localStorage.removeItem('app_review_shown')
+        localStorage.removeItem('app_review_snoozed_until')
+        useUIStore.getState().setReviewModalOpen(true)
+      }
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)

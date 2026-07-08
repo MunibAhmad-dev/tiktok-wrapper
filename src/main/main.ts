@@ -329,6 +329,13 @@ function createFacebookView(account: WorkspaceAccount | Account): void {
   const acctSession = session.fromPartition(account.partition);
   acctSession.setUserAgent(USER_AGENT);
 
+  // Grant camera + microphone to the TikTok BrowserView so video recording,
+  // TikTok LIVE, and video messages work inside the sandbox.
+  acctSession.setPermissionRequestHandler((_wc, permission, callback) => {
+    const allowed = ['camera', 'microphone', 'media', 'mediaKeySystem', 'fullscreen', 'notifications']
+    callback(allowed.includes(permission))
+  })
+
   messengerView = new BrowserView({
     webPreferences: {
       preload: path.join(__dirname, 'messengerPreload.js'),
