@@ -21,6 +21,9 @@ extraResources:
 mac:
   category: public.app-category.social-networking
   icon: assets/icon.png
+  extendInfo:
+    NSMicrophoneUsageDescription: "Used for voice messages and audio calls."
+    NSCameraUsageDescription: "Used for video messages and video calls."
   target:
     - target: dmg
       arch: [arm64]
@@ -53,6 +56,9 @@ mas:
   identity: "Apple Distribution: Mihai Graure (L284ZYR49L)"
   hardenedRuntime: false
   entitlements: build/entitlements.mas.plist
+  extendInfo:
+    NSMicrophoneUsageDescription: "Used for voice messages and audio calls."
+    NSCameraUsageDescription: "Used for video messages and video calls."
   entitlementsInherit: build/entitlements.mas.inherit.plist
   entitlementsLoginHelper: build/entitlements.mas.loginhelper.plist
   provisioningProfile: appsfortiktokprovisionaryprofile.provisionprofile
