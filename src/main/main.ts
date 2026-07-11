@@ -104,6 +104,16 @@ app.on('web-contents-created', (_event, contents) => {
   });
 
   contents.setWindowOpenHandler(({ url }) => {
+    try {
+      const { hostname } = new URL(url);
+      const isTrusted = ALLOWED_HOSTS.some(
+        (h) => hostname === h || hostname.endsWith(`.${h}`)
+      );
+      if (isTrusted) {
+        // TikTok auth popups (incl. Google OAuth) stay inside Electron
+        return { action: 'allow' };
+      }
+    } catch { /* invalid URL — fall through to external */ }
     shell.openExternal(url).catch(() => { });
     return { action: 'deny' };
   });
