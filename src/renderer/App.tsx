@@ -15,7 +15,7 @@ import { PreferencesModal } from './components/Modals/PreferencesModal'
 import { DisclaimerModal } from './components/Modals/DisclaimerModal'
 import { CreateWorkspaceModal } from './components/Modals/CreateWorkspaceModal'
 import { FeedbackModal } from './components/Modals/FeedbackModal'
-import { ReviewModal } from './components/Modals/ReviewModal'
+import { ReviewModal, shouldShowReview, REVIEW_LAUNCH_KEY, REVIEW_SESSION_KEY } from './components/Modals/ReviewModal'
 import { OnboardingScreen } from './components/OnboardingScreen'
 import { SplashScreen } from './components/SplashScreen'
 import { CommandPalette } from './components/CommandPalette'
@@ -23,7 +23,7 @@ import { useSettingsStore } from './store/settingsStore'
 import { useUIStore } from './store/uiStore'
 import { useWorkspaceStore } from './store/workspaceStore'
 import { useNotificationStore } from './store/notificationStore'
-import { IAP_ENABLED } from '../shared/constants'
+import { IAP_ENABLED, APP_VERSION } from '../shared/constants'
 
 export function App() {
   const { theme, isPremium, updateSettings, setSettings } = useSettingsStore()
@@ -38,12 +38,12 @@ export function App() {
     setUnreadCounts,
     isFeedbackModalOpen,
     setFeedbackModalOpen,
-    setReviewModalOpen,
   } = useUIStore()
   const { setWorkspaces, setWorkspaceAccounts, setActiveWorkspaceAccountId } = useWorkspaceStore()
   const { addEntry: addNotificationEntry, markRead: markNotificationRead } = useNotificationStore()
   const [isLoading, setIsLoading] = useState(true)
   const [showOnboarding, setShowOnboarding] = useState(false)
+  const [showReviewModal, setShowReviewModal] = useState(false)
 
   useEffect(() => {
     const init = async () => {
@@ -231,22 +231,22 @@ export function App() {
   }, [])
 
   // ── Review prompt ────────────────────────────────────────────────────────
-  // Guideline 5.6.3 — only after 3 opens, 30 s delay, 3-day snooze on dismiss
+  // Guideline 5.6.3 — 3rd open (2 s delay) or 20 min of use; 7-day snooze; re-shows on new version
   useEffect(() => {
-    // Permanently dismissed after rating
-    if (localStorage.getItem('app_review_shown')) return
-
-    // Snoozed by "Maybe Later"
-    const snoozedUntil = parseInt(localStorage.getItem('app_review_snoozed_until') || '0', 10)
-    if (Date.now() < snoozedUntil) return
-
-    // Track launches; require at least 3
-    const count = parseInt(localStorage.getItem('app_launch_count') || '0', 10) + 1
-    localStorage.setItem('app_launch_count', String(count))
-    if (count < 3) return
-
-    // Show after 30 s so the user has time to actually use the app
-    const timer = setTimeout(() => setReviewModalOpen(true), 30_000)
+    const count = Number(localStorage.getItem(REVIEW_LAUNCH_KEY) || '0') + 1
+    localStorage.setItem(REVIEW_LAUNCH_KEY, String(count))
+    if (!localStorage.getItem(REVIEW_SESSION_KEY)) {
+      localStorage.setItem(REVIEW_SESSION_KEY, String(Date.now()))
+    }
+    if (!shouldShowReview(APP_VERSION)) return
+    if (count >= 3) {
+      setTimeout(() => setShowReviewModal(true), 2000)
+      return
+    }
+    // After 20 minutes in the same session
+    const timer = setTimeout(() => {
+      if (shouldShowReview(APP_VERSION)) setShowReviewModal(true)
+    }, 20 * 60 * 1000)
     return () => clearTimeout(timer)
   }, [])
 
@@ -266,9 +266,9 @@ export function App() {
       // Dev-only: ⌘⇧R → force-show review modal (bypasses launch count + snooze)
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'R') {
         e.preventDefault()
-        localStorage.removeItem('app_review_shown')
-        localStorage.removeItem('app_review_snoozed_until')
-        useUIStore.getState().setReviewModalOpen(true)
+        localStorage.removeItem('review_left')
+        localStorage.removeItem('review_dismissed_at')
+        setShowReviewModal(true)
       }
     }
     window.addEventListener('keydown', handler)
@@ -292,12 +292,12 @@ export function App() {
       <WorkspaceView />
 
       {/* ── Modals ─────────────────────────────────────────────────────── */}
-      <PreferencesModal />
+      <PreferencesModal onShowReview={() => setShowReviewModal(true)} />
       <DisclaimerModal />
       <CreateWorkspaceModal />
       <FeedbackModal open={isFeedbackModalOpen} onClose={() => setFeedbackModalOpen(false)} />
       <CommandPalette />
-      <ReviewModal />
+      <ReviewModal open={showReviewModal} onClose={() => setShowReviewModal(false)} currentVersion={APP_VERSION} />
       <SplashScreen />
       <Toaster position="bottom-right" richColors />
     </div>

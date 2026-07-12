@@ -978,6 +978,22 @@ function setupIPC(): void {
 
   ipcMain.handle('dock:getCount', () => dockManager.getCount());
 
+  // App Store review — tries native SKStoreReviewRequestAPI only.
+  // Returns true if the native sheet was shown, false if not available.
+  // The renderer handles the fallback so it can open the HTTPS URL via the
+  // proven shell:openExternal path (itms-apps:// causes a blank page on some builds).
+  ipcMain.handle('review:requestNative', async () => {
+    if (process.platform !== 'darwin') return false
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const objc = require('objc')
+      objc.import('StoreKit')
+      const cls = objc.SKStoreReviewRequestAPI ?? objc.$SKStoreReviewRequestAPI
+      if (cls) { cls.requestReview(); return true }
+    } catch {}
+    return false
+  })
+
   // External links (blocked by window open handler, use shell instead)
   ipcMain.on('shell:openExternal', (_e, url: string) => {
     // Allow http/https URLs and mailto: links (support email).

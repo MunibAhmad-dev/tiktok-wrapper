@@ -40,7 +40,7 @@ const ACCENT_COLORS = [
   { label: 'Amber',   value: '#f59e0b' },
 ]
 
-export function PreferencesModal() {
+export function PreferencesModal({ onShowReview }: { onShowReview?: () => void } = {}) {
   const { isPrefsModalOpen, setPrefsModalOpen, currentUser, setActiveView } = useUIStore()
   const {
     isPremium, autoLaunch, showNotifications, focusMode, sidebarExpanded,
@@ -474,6 +474,13 @@ export function PreferencesModal() {
                           <ExternalLink className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground transition-colors" />
                         </button>
                       ))}
+                      <button
+                        onClick={() => { close(); onShowReview?.() }}
+                        className="w-full flex items-center justify-between p-3.5 rounded-xl bg-card border border-border/40 hover:border-border text-sm font-medium text-foreground transition-colors group"
+                      >
+                        Rate Apps for TikTok
+                        <span className="text-base leading-none">⭐</span>
+                      </button>
                     </div>
 
                     <p className="text-[11px] text-muted-foreground text-center leading-relaxed">
