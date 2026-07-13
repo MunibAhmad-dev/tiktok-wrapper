@@ -3,7 +3,7 @@ export const APP_NAME = "Apps for TikTok";
 export const IAP_ENABLED = false;
 // Numeric App Store ID — fill this in after your app is published (e.g. "id6741234567")
 export const APP_STORE_REVIEW_URL = "https://apps.apple.com/app/6783051609?action=write-review";
-export const APP_VERSION = "1.11.0";
+export const APP_VERSION = "1.12.0";
 export const MESSENGER_URL = "https://www.tiktok.com";
 export const MESSENGER_CHAT_URL = "https://www.tiktok.com/messages";
 export const FACEBOOK_LANGUAGE_URL = "https://www.tiktok.com/setting";
@@ -45,13 +45,33 @@ export const AVATAR_COLORS = [
 ];
 
 export const ALLOWED_HOSTS = [
+  // TikTok core domains
   "tiktok.com",
   "www.tiktok.com",
   "m.tiktok.com",
   "tiktokcdn.com",
   "tiktokcdn-us.com",
   "ibytedtos.com",
-  "accounts.google.com", // Google login via TikTok
+  "bytedance.com",
+  "lf16-cdn-tos.tiktokcdn.com",
+  // Google auth (Continue with Google on TikTok login)
+  "accounts.google.com",
+  "google.com",
+  "gstatic.com",
+  "googleapis.com",
+  "googleusercontent.com",
+  // Facebook auth (Continue with Facebook on TikTok login)
+  "facebook.com",
+  "fbcdn.net",
+  "facebook.net",
+  "connect.facebook.net",
+  // Apple auth (Sign in with Apple)
+  "appleid.apple.com",
+  "idmsa.apple.com",
+  // Twitter/X auth
+  "twitter.com",
+  "x.com",
+  // Dev
   "localhost",
   "127.0.0.1",
 ];
