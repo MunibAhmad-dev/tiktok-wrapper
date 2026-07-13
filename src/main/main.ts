@@ -996,8 +996,8 @@ function setupIPC(): void {
 
   // External links (blocked by window open handler, use shell instead)
   ipcMain.on('shell:openExternal', (_e, url: string) => {
-    // Allow http/https URLs and mailto: links (support email).
-    if (/^https?:\/\//i.test(url) || /^mailto:/i.test(url)) {
+    // Allow http/https, mailto, and App Store deep links.
+    if (/^https?:\/\//i.test(url) || /^mailto:/i.test(url) || /^itms-apps:\/\//i.test(url) || /^macappstore:\/\//i.test(url)) {
       shell.openExternal(url).catch((err) => {
         console.error('[shell:openExternal] failed to open:', url, err);
       });
