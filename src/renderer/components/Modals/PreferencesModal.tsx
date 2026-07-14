@@ -10,10 +10,10 @@ import {
 import { Button } from '../ui/button'
 import { Switch } from '../ui/switch'
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
-import { APP_VERSION, PRIVACY_POLICY_URL, TERMS_OF_SERVICE_URL, SUPPORT_URL } from '../../../shared/constants'
+import { APP_STORE_REVIEW_URL, APP_VERSION, PRIVACY_POLICY_URL, TERMS_OF_SERVICE_URL, SUPPORT_URL } from '../../../shared/constants'
 import {
   Settings, User, Bell, Palette, CreditCard, Info,
-  Trash2, ExternalLink, CheckCircle2, FlaskConical, Lock, Sparkles,
+  Trash2, ExternalLink, CheckCircle2, FlaskConical, Lock, Sparkles, MessageSquareText,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { toast } from 'sonner'
@@ -480,6 +480,16 @@ export function PreferencesModal({ onShowReview }: { onShowReview?: () => void }
                       >
                         Rate Apps for TikTok
                         <span className="text-base leading-none">⭐</span>
+                      </button>
+                      <button
+                        onClick={() => window.electronAPI?.openExternal(APP_STORE_REVIEW_URL)}
+                        className="w-full flex items-center justify-between p-3.5 rounded-xl bg-card border border-border/40 hover:border-primary/50 text-sm font-medium text-foreground transition-colors group"
+                      >
+                        <span className="flex items-center gap-2">
+                          <MessageSquareText className="h-4 w-4 text-primary" />
+                          Write a Review
+                        </span>
+                        <span className="text-[11px] font-medium text-muted-foreground">Optional</span>
                       </button>
                     </div>
 

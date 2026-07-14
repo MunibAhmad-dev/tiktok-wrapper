@@ -10,6 +10,10 @@ files:
   - dist/**/*
   - dist-electron/**/*
   - "!**/*.map"
+  - node_modules/store-review/**/*
+
+asarUnpack:
+  - node_modules/store-review/build/Release/*.node
 
 extraResources:
   - from: assets/

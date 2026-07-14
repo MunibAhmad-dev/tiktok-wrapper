@@ -237,6 +237,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   requestNativeReview: (): Promise<boolean> => ipcRenderer.invoke('review:requestNative'),
 
+  onTikTokLoginSuccess: (cb: () => void) => {
+    const handler = () => cb();
+    ipcRenderer.on('review:tiktok-login-success', handler);
+    return () => ipcRenderer.removeListener('review:tiktok-login-success', handler);
+  },
+
   // ── Menu events (from native menu bar) ───────────────────────────────────
   onMenuEvent: (
     event:

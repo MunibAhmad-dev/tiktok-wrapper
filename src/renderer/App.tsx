@@ -15,7 +15,15 @@ import { PreferencesModal } from './components/Modals/PreferencesModal'
 import { DisclaimerModal } from './components/Modals/DisclaimerModal'
 import { CreateWorkspaceModal } from './components/Modals/CreateWorkspaceModal'
 import { FeedbackModal } from './components/Modals/FeedbackModal'
-import { ReviewModal, shouldShowReview, REVIEW_LAUNCH_KEY, REVIEW_SESSION_KEY } from './components/Modals/ReviewModal'
+import {
+  isThirdReviewLaunch,
+  migrateReviewPromptState,
+  recordReviewLaunch,
+  requestNativeReview,
+  resetReviewPrompt,
+  shouldShowReview,
+  REVIEW_SESSION_KEY,
+} from './lib/reviewPrompt'
 import { OnboardingScreen } from './components/OnboardingScreen'
 import { SplashScreen } from './components/SplashScreen'
 import { CommandPalette } from './components/CommandPalette'
@@ -43,7 +51,6 @@ export function App() {
   const { addEntry: addNotificationEntry, markRead: markNotificationRead } = useNotificationStore()
   const [isLoading, setIsLoading] = useState(true)
   const [showOnboarding, setShowOnboarding] = useState(false)
-  const [showReviewModal, setShowReviewModal] = useState(false)
 
   useEffect(() => {
     const init = async () => {
@@ -230,24 +237,38 @@ export function App() {
     init()
   }, [])
 
-  // ── Review prompt ────────────────────────────────────────────────────────
-  // Guideline 5.6.3 — 3rd open (2 s delay) or 20 min of use; 7-day snooze; re-shows on new version
+  // ── Native Apple review: third launch or 20 minutes in this session ─────
   useEffect(() => {
-    const count = Number(localStorage.getItem(REVIEW_LAUNCH_KEY) || '0') + 1
-    localStorage.setItem(REVIEW_LAUNCH_KEY, String(count))
-    if (!localStorage.getItem(REVIEW_SESSION_KEY)) {
-      localStorage.setItem(REVIEW_SESSION_KEY, String(Date.now()))
+    const timers: ReturnType<typeof setTimeout>[] = []
+    migrateReviewPromptState()
+
+    const trigger = () => {
+      if (shouldShowReview(APP_VERSION)) void requestNativeReview(APP_VERSION)
     }
-    if (!shouldShowReview(APP_VERSION)) return
-    if (count >= 3) {
-      setTimeout(() => setShowReviewModal(true), 2000)
-      return
+
+    const count = recordReviewLaunch()
+    if (isThirdReviewLaunch(count)) timers.push(setTimeout(trigger, 5_000))
+
+    localStorage.setItem(REVIEW_SESSION_KEY, String(Date.now()))
+    timers.push(setTimeout(trigger, 20 * 60 * 1000))
+
+    return () => timers.forEach(clearTimeout)
+  }, [])
+
+  // Invoke Apple's review flow after a confirmed interactive TikTok login.
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const unsubscribe = window.electronAPI?.onTikTokLoginSuccess?.(() => {
+      if (timer) clearTimeout(timer)
+      timer = setTimeout(() => {
+        if (shouldShowReview(APP_VERSION)) void requestNativeReview(APP_VERSION)
+      }, 4_000)
+    })
+
+    return () => {
+      if (timer) clearTimeout(timer)
+      unsubscribe?.()
     }
-    // After 20 minutes in the same session
-    const timer = setTimeout(() => {
-      if (shouldShowReview(APP_VERSION)) setShowReviewModal(true)
-    }, 20 * 60 * 1000)
-    return () => clearTimeout(timer)
   }, [])
 
   // ── ⌘K global shortcut ──────────────────────────────────────────────────
@@ -263,12 +284,11 @@ export function App() {
         window.electronAPI?.settings.update({ hasSeenOnboarding: false, isPremium: false })
           .then(() => setShowOnboarding(true))
       }
-      // Dev-only: ⌘⇧R → force-show review modal (bypasses launch count + snooze)
+      // Dev-only: ⌘⇧R → reset review state and invoke StoreKit immediately
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'R') {
         e.preventDefault()
-        localStorage.removeItem('review_left')
-        localStorage.removeItem('review_dismissed_at')
-        setShowReviewModal(true)
+        resetReviewPrompt()
+        void requestNativeReview(APP_VERSION)
       }
     }
     window.addEventListener('keydown', handler)
@@ -292,12 +312,14 @@ export function App() {
       <WorkspaceView />
 
       {/* ── Modals ─────────────────────────────────────────────────────── */}
-      <PreferencesModal onShowReview={() => setShowReviewModal(true)} />
+      <PreferencesModal onShowReview={() => {
+        resetReviewPrompt()
+        void requestNativeReview(APP_VERSION)
+      }} />
       <DisclaimerModal />
       <CreateWorkspaceModal />
       <FeedbackModal open={isFeedbackModalOpen} onClose={() => setFeedbackModalOpen(false)} />
       <CommandPalette />
-      <ReviewModal open={showReviewModal} onClose={() => setShowReviewModal(false)} currentVersion={APP_VERSION} />
       <SplashScreen />
       <Toaster position="bottom-right" richColors />
     </div>

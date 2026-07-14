@@ -1,13 +1,15 @@
 {
   "name": "apps-for-tiktok",
   "productName": "Apps for TikTok",
-  "version": "1.13.0",
+  "version": "1.14.0",
   "description": "Apps for TikTok – Multi-account TikTok desktop client with productivity tools",
   "main": "dist-electron/main.js",
   "author": "Apps for TikTok",
   "license": "MIT",
   "scripts": {
     "dev": "vite",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "build": "tsc --noEmit && vite build",
     "build:dmg": "npm run build && electron-builder --mac dmg",
     "build:mas": "npm run build && electron-builder --mac mas",
@@ -15,7 +17,6 @@
     "build:pkg": "rm -rf release/mas-universal && rm -f release/*.pkg && CSC_INSTALLER_LINK=\"./developers-installer.p12\" CSC_INSTALLER_KEY_PASSWORD=\"Mondialu13\" npm run build && (electron-builder --mac mas --universal --config.mas.type=distribution || true) && codesign --force --sign \"Apple Distribution: Mihai Graure (L284ZYR49L)\" --entitlements \"build/entitlements.mas.loginhelper.plist\" \"release/mas-universal/Apps for TikTok.app/Contents/Library/LoginItems/Apps for TikTok Login Helper.app/Contents/MacOS/Apps for TikTok Login Helper\" && productbuild --component \"release/mas-universal/Apps for TikTok.app\" /Applications --sign \"3rd Party Mac Developer Installer: Mihai Graure (L284ZYR49L)\" \"release/Apps for TikTok.pkg\"",
     "build:all": "npm run build && electron-builder --mac dmg mas",
     "preview": "vite preview",
-    "rebuild": "electron-rebuild -f -w objc",
     "postinstall": "electron-builder install-app-deps"
   },
   "devDependencies": {
@@ -30,12 +31,14 @@
     "autoprefixer": "^10.5.0",
     "electron": "^29.3.0",
     "electron-builder": "^24.13.3",
+    "jsdom": "^29.1.1",
     "postcss": "^8.5.14",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.4.5",
     "vite": "^5.2.11",
     "vite-plugin-electron": "^0.28.7",
-    "vite-plugin-electron-renderer": "^0.14.6"
+    "vite-plugin-electron-renderer": "^0.14.6",
+    "vitest": "^4.1.10"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.11",
@@ -48,11 +51,11 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dotenv": "^17.4.2",
-    "objc": "^1.1.2",
     "lucide-react": "^1.14.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "sonner": "^2.0.7",
+    "store-review": "file:./native/store-review",
     "tailwind-merge": "^3.6.0",
     "uuid": "^9.0.1",
     "zustand": "^5.0.13"

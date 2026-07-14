@@ -88,6 +88,7 @@ declare global {
       }
       openExternal: (url: string) => void
       requestNativeReview: () => Promise<boolean>
+      onTikTokLoginSuccess: (cb: () => void) => () => void
       onMenuEvent: (event: string, cb: (data?: unknown) => void) => void
       window: {
         setClosable: (enabled: boolean) => void

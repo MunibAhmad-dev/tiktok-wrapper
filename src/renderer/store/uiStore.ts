@@ -23,7 +23,6 @@ interface UIStore {
   isCreateWorkspaceModalOpen: boolean
   isFeedbackModalOpen: boolean
   isCommandPaletteOpen: boolean
-  isReviewModalOpen: boolean
 
   // Pending text — set when user clicks "→ AI Reply" / "→ Translate" in toolbar
   // so the dedicated panel can pre-fill its input without clipboard
@@ -48,7 +47,6 @@ interface UIStore {
   setCreateWorkspaceModalOpen: (open: boolean) => void
   setFeedbackModalOpen: (open: boolean) => void
   setCommandPaletteOpen: (open: boolean) => void
-  setReviewModalOpen: (open: boolean) => void
   hideSplash: () => void
   setPendingAIText: (text: string) => void
   setPendingTranslateText: (text: string) => void
@@ -72,7 +70,6 @@ export const useUIStore = create<UIStore>((set) => ({
   isCreateWorkspaceModalOpen: false,
   isFeedbackModalOpen: false,
   isCommandPaletteOpen: false,
-  isReviewModalOpen: false,
 
   pendingAIText: '',
   pendingTranslateText: '',
@@ -93,7 +90,6 @@ export const useUIStore = create<UIStore>((set) => ({
   setCreateWorkspaceModalOpen: (open) => set({ isCreateWorkspaceModalOpen: open }),
   setFeedbackModalOpen: (open) => set({ isFeedbackModalOpen: open }),
   setCommandPaletteOpen: (open) => set({ isCommandPaletteOpen: open }),
-  setReviewModalOpen: (open) => set({ isReviewModalOpen: open }),
   hideSplash: () => set({ splashVisible: false }),
   setPendingAIText: (text) => set({ pendingAIText: text }),
   setPendingTranslateText: (text) => set({ pendingTranslateText: text }),

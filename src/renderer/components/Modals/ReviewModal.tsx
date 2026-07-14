@@ -64,13 +64,15 @@ export function ReviewModal({ open, onClose, currentVersion }: Props) {
     }
   }
 
-  const handleWriteReview = () => {
+  const handleWriteReview = async () => {
     localStorage.setItem(REVIEW_LEFT_KEY, '1')
     localStorage.setItem(REVIEW_VERSION_KEY, currentVersion)
-    // Always open the App Store app directly via itms-apps:// — the native SKStoreReview
-    // sheet is rate-limited by Apple (3x/year) and gives no feedback when silently blocked,
-    // so it cannot reliably handle user-initiated review requests.
-    window.electronAPI?.openExternal(APP_STORE_REVIEW_URL)
+    try {
+      const native = await window.electronAPI?.requestNativeReview?.()
+      if (!native) window.electronAPI?.openExternal(APP_STORE_REVIEW_URL)
+    } catch {
+      window.electronAPI?.openExternal(APP_STORE_REVIEW_URL)
+    }
     close()
   }
 

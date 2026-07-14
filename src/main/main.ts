@@ -41,6 +41,7 @@ import { DockManager } from './dockManager';
 import { NotificationManager } from './notificationManager';
 import { IAPManager } from './iapManager';
 import { AuthManager } from './authManager';
+import { TikTokLoginReviewDetector, isTikTokAuthRoute } from './tiktokLoginReviewDetector';
 import { Store } from './store';
 import { Account, Workspace, WorkspaceAccount } from '../shared/types';
 import {
@@ -84,6 +85,7 @@ const unreadCounts: Record<string, number> = {};
 let isModalOpen = false;
 let activeBrowserAccountId: string | null = null;
 let browserViewGeneration = 0;
+let disposeLoginReviewCookieListener: (() => void) | null = null;
 
 // ── Security: restrict navigation in ALL web contents ─────────────────────────
 app.on('web-contents-created', (_event, contents) => {
@@ -329,6 +331,8 @@ function createFacebookView(account: WorkspaceAccount | Account): void {
 
   // Tear down previous view
   if (messengerView) {
+    disposeLoginReviewCookieListener?.();
+    disposeLoginReviewCookieListener = null;
     browserViewGeneration += 1;
     activeBrowserAccountId = null;
     mainWindow.removeBrowserView(messengerView);
@@ -338,6 +342,61 @@ function createFacebookView(account: WorkspaceAccount | Account): void {
 
   const acctSession = session.fromPartition(account.partition);
   acctSession.setUserAgent(USER_AGENT);
+  const loginReviewDetector = new TikTokLoginReviewDetector();
+  const sessionCookieNames = new Set(['sessionid', 'sessionid_ss', 'sid_tt', 'sid_guard']);
+
+  const readHasTikTokSessionCookie = async (): Promise<boolean> => {
+    const cookies = await acctSession.cookies.get({ url: 'https://www.tiktok.com' });
+    return cookies.some(cookie => sessionCookieNames.has(cookie.name) && Boolean(cookie.value));
+  };
+
+  const emitTikTokLoginSuccess = (): void => {
+    console.log('[review] Confirmed successful interactive TikTok login');
+    mainWindow?.webContents.send('review:tiktok-login-success');
+  };
+
+  // Capture the state before the user can complete login. This prevents an
+  // existing authenticated session from being reported as a fresh login.
+  const initialLoginState = readHasTikTokSessionCookie()
+    .then(hasSessionCookie => loginReviewDetector.initializeSessionState(hasSessionCookie))
+    .catch(err => console.warn('[review] Could not initialize TikTok login state:', err));
+
+  const inspectTikTokSessionTransition = async (): Promise<void> => {
+    await initialLoginState;
+    try {
+      const hasSessionCookie = await readHasTikTokSessionCookie();
+      if (loginReviewDetector.observeSessionState(hasSessionCookie)) emitTikTokLoginSuccess();
+    } catch (err) {
+      console.warn('[review] Could not inspect TikTok cookie transition:', err);
+    }
+  };
+
+  const onTikTokCookieChanged = (
+    _event: Electron.Event,
+    cookie: Electron.Cookie,
+  ): void => {
+    if (sessionCookieNames.has(cookie.name)) void inspectTikTokSessionTransition();
+  };
+  acctSession.cookies.on('changed', onTikTokCookieChanged);
+  disposeLoginReviewCookieListener = () => {
+    acctSession.cookies.removeListener('changed', onTikTokCookieChanged);
+  };
+
+  const detectSuccessfulTikTokLogin = async (url: string): Promise<void> => {
+    if (isTikTokAuthRoute(url)) {
+      loginReviewDetector.observeNavigation(url, false);
+      return;
+    }
+
+    try {
+      const hasSessionCookie = await readHasTikTokSessionCookie();
+      if (loginReviewDetector.observeNavigation(url, hasSessionCookie)) {
+        emitTikTokLoginSuccess();
+      }
+    } catch (err) {
+      console.warn('[review] Could not inspect TikTok login state:', err);
+    }
+  };
 
   // Grant camera + microphone to the TikTok BrowserView so video recording,
   // TikTok LIVE, and video messages work inside the sandbox.
@@ -376,14 +435,17 @@ function createFacebookView(account: WorkspaceAccount | Account): void {
     messengerView.webContents.on('did-finish-load', () => {
       sendBrowserState();
       scheduleFacebookProfileRefresh(account, 1800);
+      void detectSuccessfulTikTokLogin(messengerView?.webContents.getURL() || '');
     });
-    messengerView.webContents.on('did-navigate', () => {
+    messengerView.webContents.on('did-navigate', (_event, url) => {
       sendBrowserState();
       scheduleFacebookProfileRefresh(account, 1800);
+      void detectSuccessfulTikTokLogin(url);
     });
-    messengerView.webContents.on('did-navigate-in-page', () => {
+    messengerView.webContents.on('did-navigate-in-page', (_event, url) => {
       sendBrowserState();
       scheduleFacebookProfileRefresh(account, 1800);
+      void detectSuccessfulTikTokLogin(url);
     });
   }
 
@@ -978,20 +1040,20 @@ function setupIPC(): void {
 
   ipcMain.handle('dock:getCount', () => dockManager.getCount());
 
-  // App Store review — tries native SKStoreReviewRequestAPI only.
-  // Returns true if the native sheet was shown, false if not available.
-  // The renderer handles the fallback so it can open the HTTPS URL via the
-  // proven shell:openExternal path (itms-apps:// causes a blank page on some builds).
+  // Native Apple rating overlay. StoreKit decides whether to display it and
+  // applies Apple's system-level frequency limits.
   ipcMain.handle('review:requestNative', async () => {
     if (process.platform !== 'darwin') return false
     try {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const objc = require('objc')
-      objc.import('StoreKit')
-      const cls = objc.SKStoreReviewRequestAPI ?? objc.$SKStoreReviewRequestAPI
-      if (cls) { cls.requestReview(); return true }
-    } catch {}
-    return false
+      const storeReview = require('store-review')
+      const invoked = storeReview.requestReview() === true
+      console.log(`[review] SKStoreReviewController.requestReview invoked=${invoked}`)
+      return invoked
+    } catch (err) {
+      console.warn('[review] native store-review addon unavailable:', err)
+      return false
+    }
   })
 
   // External links (blocked by window open handler, use shell instead)
@@ -1237,6 +1299,21 @@ app.whenReady().then(() => {
     }
   });
 
+  // Development-only review shortcut. Register in the main process so it
+  // still works while the embedded TikTok BrowserView owns keyboard focus.
+  if (!app.isPackaged || process.env['REVIEW_DIAGNOSTIC'] === '1') {
+    globalShortcut.register('CommandOrControl+Shift+R', () => {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const storeReview = require('store-review');
+        const invoked = storeReview.requestReview() === true;
+        console.log(`[review] Development shortcut invoked StoreKit=${invoked}`);
+      } catch (err) {
+        console.warn('[review] Development shortcut could not invoke StoreKit:', err);
+      }
+    });
+  }
+
   // Cmd+1–5 → navigate to views (registered in renderer via onMenuEvent)
   const viewShortcuts: Array<[string, string]> = [
     ['CommandOrControl+1', 'dashboard'],
@@ -1285,4 +1362,3 @@ app.on('window-all-closed', () => {
 app.on('will-quit', () => {
   globalShortcut.unregisterAll();
 });
-
