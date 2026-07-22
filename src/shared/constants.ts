@@ -3,7 +3,7 @@ export const APP_NAME = "Apps for TikTok";
 export const IAP_ENABLED = false;
 // Numeric App Store ID — fill this in after your app is published (e.g. "id6741234567")
 export const APP_STORE_REVIEW_URL = "itms-apps://itunes.apple.com/app/id6783051609?action=write-review";
-export const APP_VERSION = "1.15.0";
+export const APP_VERSION = "1.17.0";
 export const MESSENGER_URL = "https://www.tiktok.com/messages";
 export const MESSENGER_CHAT_URL = "https://www.tiktok.com/messages";
 export const FACEBOOK_LANGUAGE_URL = "https://www.tiktok.com/setting";
